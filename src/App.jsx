@@ -11,9 +11,9 @@ export default function App() {
   });
 
   const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem("favorites");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const saved = localStorage.getItem("favorites");
+  return saved ? JSON.parse(saved) : [];
+});
 
   const [groceryList, setGroceryList] = useState([]);
   const [checkedItems, setCheckedItems] = useState([]);
@@ -119,10 +119,18 @@ export default function App() {
   };
 
   const addFavorite = () => {
-    const updated = [...favorites, recipe];
-    setFavorites(updated);
-    localStorage.setItem("favorites", JSON.stringify(updated));
-  };
+  if (!recipe) return;
+
+  // prevent duplicates
+  if (favorites.find((r) => r.name === recipe.name)) return;
+
+  const updated = [...favorites, recipe];
+
+  setFavorites(updated);
+
+  // SAVE to localStorage
+  localStorage.setItem("favorites", JSON.stringify(updated));
+};
 
   const toggleIngredient = (item) => {
     setCheckedItems((prev) =>
@@ -141,7 +149,13 @@ export default function App() {
   const removeFromGrocery = (item) => {
     setGroceryList((prev) => prev.filter((i) => i !== item));
   };
+  const removeFavorite = (name) => {
+  const updated = favorites.filter((r) => r.name !== name);
 
+  setFavorites(updated);
+
+  localStorage.setItem("favorites", JSON.stringify(updated));
+};
   const addToWeek = () => {
     setWeeklyPlan([...weeklyPlan, recipe]);
   };
@@ -262,8 +276,34 @@ export default function App() {
             <>
               <h2>❤️ Favorites</h2>
               {favorites.map((r, i) => (
-                <div key={i}>{r.name}</div>
-              ))}
+  <div
+    key={i}
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10,
+      padding: 10,
+      background: "white",
+      borderRadius: 10
+    }}
+  >
+    <span>{r.name}</span>
+
+    <button
+      onClick={() => removeFavorite(r.name)}
+      style={{
+        border: "none",
+        background: "#ef4444",
+        color: "white",
+        borderRadius: 8,
+        padding: "5px 10px"
+      }}
+    >
+      🗑 Remove
+    </button>
+  </div>
+))}
             </>
           )}
 
