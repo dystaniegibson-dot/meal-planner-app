@@ -281,24 +281,46 @@ export default function App() {
             <>
               <h2>❤️ Favorites</h2>
               {favorites.length === 0 && <p>No favorites yet</p>}
-              {favorites.map((r, i) => (
+
+{favorites.map((r, i) => (
   <div
     key={i}
     style={{
       display: "flex",
       justifyContent: "space-between",
-      marginBottom: 10
+      alignItems: "center",
+      marginBottom: 10,
+      padding: 10,
+      background: "white",
+      borderRadius: 10
     }}
   >
-    <span>{r.name}</span>
+    {/* CLICKABLE AREA */}
+    <div
+      style={{ flex: 1, cursor: "pointer" }}
+      onClick={() => openFavorite(r)}
+    >
+      {r.name}
+    </div>
 
-    <button onClick={() => removeFavorite(r.name)}>
+    {/* REMOVE BUTTON */}
+    <button
+      onClick={(e) => {
+        e.stopPropagation(); // 🔑 IMPORTANT
+        removeFavorite(r.name);
+      }}
+      style={{
+        border: "none",
+        background: "#ef4444",
+        color: "white",
+        borderRadius: 8,
+        padding: "5px 10px"
+      }}
+    >
       ❌
     </button>
   </div>
 ))}
-            </>
-          )}
 
           {/* GROCERY */}
           {page === "grocery" && (
