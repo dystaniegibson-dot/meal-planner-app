@@ -160,6 +160,11 @@ export default function App() {
     setWeeklyPlan([...weeklyPlan, recipe]);
   };
 
+  const openFavorite = (recipeData) => {
+  setRecipe(recipeData);
+  setPage("home");
+};
+
   // ===== UI =====
   return (
     <div style={{ minHeight: "100vh", background: "#f3f4f6", display: "flex", justifyContent: "center" }}>
@@ -275,6 +280,7 @@ export default function App() {
           {page === "favorites" && (
             <>
               <h2>❤️ Favorites</h2>
+              {favorites.length === 0 && <p>No favorites yet</p>}
               {favorites.map((r, i) => (
   <div
     key={i}
