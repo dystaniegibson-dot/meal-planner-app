@@ -1,10 +1,14 @@
-import { useState, useRef } from "react";
-import { useEffect } from "react";
+import Tesseract from "tesseract.js";
+import { useState, useRef, useEffect } from "react";
+
 
 export default function App() {
+  const scanInputRef = useRef(null);
   const inputRefs = useRef([]);
   // ===== STATE ===== //
-  
+
+  const [scanImage, setScanImage] = useState(null);
+  const [fullRecipePaste, setFullRecipePaste] = useState("");
 const [categoryFilter, setCategoryFilter] = useState("All");
   const [addedRecipes, setAddedRecipes] = useState({});
   const [activeRecipe, setActiveRecipe] = useState(null);
@@ -90,8 +94,307 @@ const [zoomImage, setZoomImage] = useState(null);
     imageIngredients: [],
     imageInstructions: [],
     favorite: false,
-    category: ""
+    category: "",
+    image: ""
   });
+
+const cleanOCRText = (text) => {
+  return text
+    // remove weird symbols
+    .replace(/[|]/g, "")
+    .replace(/[—–]/g, "-")
+    .replace(/[^a-zA-Z0-9.,:\n\-()/% ]/g, "")
+
+    // fix spacing
+    .replace(/\s+/g, " ")
+
+    // fix line breaks
+    .replace(/\n\s*\n/g, "\n")
+
+    .trim();
+};
+
+const autoParseRecipe = () => {
+  const text = fullRecipePaste;
+
+  if (!text) return;
+
+  const lower = text.toLowerCase();
+
+  // detect sections
+  const ingredientKeywords = [
+  "ingredients",
+  "what you need",
+  "you will need",
+  "supplies"
+];
+
+const instructionKeywords = [
+  "instructions",
+  "directions",
+  "steps",
+  "method",
+  "how to make",
+  "preparation",
+  "alternative method",
+  "alternate method",
+  "cooking method",
+  "oven method",
+  "air fryer method"
+];
+
+  let ingredientIndex = -1;
+  let instructionIndex = -1;
+
+  ingredientKeywords.forEach((key) => {
+  const idx = lower.indexOf(key);
+  if (idx !== -1 && (ingredientIndex === -1 || idx < ingredientIndex)) {
+    ingredientIndex = idx;
+  }
+});
+
+instructionKeywords.forEach((key) => {
+  const idx = lower.indexOf(key);
+  if (idx !== -1 && (instructionIndex === -1 || idx < instructionIndex)) {
+    instructionIndex = idx;
+  }
+});
+
+  let ingredientsText = "";
+  let instructionsText = "";
+
+  // split sections
+  if (ingredientIndex !== -1 && instructionIndex !== -1) {
+    ingredientsText = text.slice(ingredientIndex, instructionIndex);
+    instructionsText = text.slice(instructionIndex);
+  } else {
+    // fallback: split in half
+    const midpoint = Math.floor(text.length / 2);
+    ingredientsText = text.slice(0, midpoint);
+    instructionsText = text.slice(midpoint);
+  }
+
+  // clean ingredients
+  const ingredients = ingredientsText
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(/^\d+[\.\)]\s*/, "") // remove "1." or "1)"
+        .trim()
+    )
+    .filter((line) => {
+  const l = line.toLowerCase();
+
+  return (
+    line &&
+    !l.includes("preheat") &&
+    !l.includes("oven") &&
+    !l.includes("heat") &&
+    !l.includes("ingredient") &&
+    !l.includes("method") &&
+    !l.includes("instruction") &&
+    !l.includes("direction") &&
+    !l.includes("step") &&
+    !l.includes("cooking") &&
+    !l.includes("preparation") &&
+    !l.includes("prepare")
+  );
+});
+
+  // clean instructions
+const instructions = instructionsText
+  .split("\n")
+  .map((line) =>
+    line
+      .replace(/^\d+[\.\)]\s*/, "")
+      .trim()
+  )
+  .filter((line) => {
+    const l = line.toLowerCase();
+
+    return (
+      line &&
+      !l.includes("ingredient") &&
+      !l.includes("method") &&
+      !l.includes("instruction") &&
+      !l.includes("direction") &&
+      !l.includes("step") &&
+      !l.includes("cooking") &&
+      !l.includes("preparation") &&
+      !l.includes("prepare")
+    );
+  })  
+  .map((step, i) => `Step ${i + 1}: ${step}`)
+  .join("\n");
+
+  // set values into your app
+  setNewRecipe((prev) => ({
+    ...prev,
+    ingredients,
+    instructions
+  }));
+
+  setIngredientPaste("");
+  setInstructionPaste("");
+  setFullRecipePaste("");
+};
+
+const extractRecipeName = (text) => {
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 3);
+
+  return lines[0] || "";
+};
+
+//===== OCR =====
+
+// scan ingredient images
+const scanIngredientImage = (file) => {
+  Tesseract.recognize(file, "eng").then(({ data: { text } }) => {
+    const lines = text.split("\n");
+
+    const cleanLine = (line) => {
+      return line
+        .toLowerCase()
+
+        // fix spacing like "2pounds"
+        .replace(/(\d)([a-zA-Z])/g, "$1 $2")
+
+        // normalize units
+        .replace(/tablespoons?/g, "tbsp")
+        .replace(/teaspoons?/g, "tsp")
+        .replace(/pounds?/g, "lb")
+
+        // remove weird symbols
+        .replace(/[^a-z0-9\s().,/%-]/g, "")
+
+        .trim();
+    };
+
+const fixNumbers = (line) => {
+  return line
+
+    // fix common OCR words → numbers
+    .replace(/\beee\b/g, "1")
+    .replace(/\beng\b/g, "1/2")
+
+    // fix crazy large numbers before units
+    .replace(/\b\d{2,}\s*(tbsp|tsp|cup|lb)\b/g, (match) => {
+      if (match.includes("tbsp")) return "2 tbsp";
+      if (match.includes("tsp")) return "1/2 tsp";
+      if (match.includes("cup")) return "1 cup";
+      if (match.includes("lb")) return "2 lb";
+      return match;
+    });
+};
+
+    setNewRecipe((prev) => {
+      const existing = prev.ingredients.map((i) => i.toLowerCase());
+
+      const newItems = lines
+        .map(cleanLine)
+        .map(fixNumbers)
+
+        // remove junk words ONLY (safe)
+        .filter((l) =>
+          l &&
+          l.length > 2 &&
+          !l.includes("ingredient") &&
+          !l.includes("method") &&
+          !l.includes("direction") &&
+          !l.includes("instruction")
+        )
+
+        // 🚫 REMOVE THIS LINE (it broke things)
+        // .filter((l) => !l.match(/^\d{2,}\s/))
+
+        // remove duplicates
+        .filter((l) => !existing.includes(l));
+
+      return {
+        ...prev,
+        ingredients: [...prev.ingredients, ...newItems]
+      };
+    });
+  });
+};
+
+// scan instruction images
+const scanInstructionImage = (file) => {
+  Tesseract.recognize(file, "eng").then(({ data: { text } }) => {
+    
+    const cleanLine = (line) => {
+      return line
+        .toLowerCase()
+
+        // remove weird symbols
+        .replace(/[|;]/g, "")
+        .replace(/[^a-z0-9\s.,()°/-]/g, "")
+
+        // fix common OCR word mistakes
+        .replace(/\bea\b/g, "clean")
+        .replace(/\bpre-heat\b/g, "preheat")
+
+        // remove leading numbers like "1." or "2 "
+        .replace(/^\s*\d+[\.\)]?\s*/, "")
+
+        // fix spacing
+        .replace(/\s+/g, " ")
+
+        .trim();
+    };
+
+    
+      const lines = text
+      .split("\n")
+      .map(cleanLine)
+      .filter(
+      (l) =>
+      l.length > 10 &&
+      l !== "instructions" &&
+      !l.includes("instructions")
+  );
+
+    setNewRecipe((prev) => {
+      const existingSteps = prev.instructions
+        ? prev.instructions.split("\n")
+        : [];
+
+      const newSteps = lines.map(
+        (line, i) => `Step ${existingSteps.length + i + 1}: ${line}`
+      );
+
+      return {
+        ...prev,
+        instructions: [...existingSteps, ...newSteps].join("\n")
+      };
+    });
+  });
+};
+
+const handleScanImage = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  setScanImage(file);
+};
+
+const runOCR = () => {
+  if (!scanImage) return;
+
+  Tesseract.recognize(scanImage, "eng", {
+    logger: (m) => console.log(m)
+  }).then(({ data: { text } }) => {
+    console.log("OCR RESULT:", text);
+
+    // ONLY fill paste box (safe)
+    setFullRecipePaste(text);
+  });
+};
+
+
 
   // ===== IMAGE =====
   const handleImage = (e, type) => {
@@ -126,6 +429,23 @@ const [zoomImage, setZoomImage] = useState(null);
     return "other";
   };
 
+const clearRecipeForm = () => {
+  setNewRecipe({
+    name: "",
+    ingredients: [""],
+    instructions: "",
+    imageIngredients: [],
+    imageInstructions: [],
+    favorite: false,
+    category: "",
+    image: ""
+  });
+
+  setIngredientPaste("");
+  setInstructionPaste("");
+  setFullRecipePaste("");
+};
+
   // ===== SAVE =====
  const saveRecipe = () => {
   const recipe = {
@@ -143,6 +463,7 @@ const [zoomImage, setZoomImage] = useState(null);
 
   setNewRecipe({
     name: "",
+    image: "",
     ingredients: [""],
     instructions: "",
     imageIngredients: [],
@@ -153,6 +474,7 @@ const [zoomImage, setZoomImage] = useState(null);
 
   setIngredientPaste("");
   setInstructionPaste("");
+  setFullRecipePaste("");
 };
 
   const addSelectedToGrocery = () => {
@@ -237,6 +559,47 @@ return (
     </div>
 
     {/* NEW RECIPE */}
+
+{/* ====== UI ====== */}
+<div style={{ marginBottom: 10 }}>
+ 
+
+  <button
+    onClick={runOCR}
+    style={{
+      marginLeft: 10,
+      padding: "6px 10px",
+      borderRadius: 6
+    }}
+  >
+    📸 Scan Recipe
+  </button>
+</div>
+
+<textarea
+  placeholder="Paste full recipe here..."
+  value={fullRecipePaste}
+  onChange={(e) => setFullRecipePaste(e.target.value)}
+  style={{
+    width: "100%",
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 8,
+    minHeight: 120
+  }}
+/>
+
+<button
+  onClick={autoParseRecipe}
+  style={{
+    marginBottom: 15,
+    padding: "8px 12px",
+    borderRadius: 8
+  }}
+>
+  ⚡ Auto Fill Recipe
+</button>
+
     {page === "new" && (
       <div style={{ background: "#fffdf5", padding: 20, borderRadius: 16 }}>
         <h3>Add Recipe</h3>
@@ -250,7 +613,140 @@ return (
           style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
 
-        {/* INGREDIENTS */}
+<input
+  type="file"
+  accept="image/*"
+  onChange={(e) => {
+    const file = e.target.files[0];
+
+    if (!file) {
+      console.log("No file selected");
+      return;
+    }
+
+    console.log("File selected:", file);
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      console.log("Image loaded:", event.target.result);
+
+      setNewRecipe((prev) => ({
+        ...prev,
+        image: event.target.result
+      }));
+    };
+
+    reader.onerror = (err) => {
+      console.error("FileReader error:", err);
+    };
+
+    reader.readAsDataURL(file);
+  }}
+  style={{ marginBottom: 10 }}
+/>
+
+{newRecipe.image && (
+  <div style={{ marginTop: 10 }}>
+    <div style={{ position: "relative", width: 200 }}>
+      <img
+        src={newRecipe.image}
+        alt="recipe"
+        style={{
+          width: "100%",
+          borderRadius: 10
+        }}
+      />
+
+      <button
+        onClick={() =>
+          setNewRecipe((prev) => ({
+            ...prev,
+            image: ""
+          }))
+        }
+        style={{
+          position: "absolute",
+          top: -10,
+          right: -10,
+          background: "#ef4444",
+          color: "white",
+          border: "none",
+          borderRadius: "50%",
+          width: 28,
+          height: 28,
+          cursor: "pointer"
+        }}
+      >
+        ✖
+      </button>
+    </div>
+  </div>
+)}
+
+      {/* INGREDIENT IMAGE UPLOAD */}
+<strong>Scan Ingredient Images (max 4)</strong>
+
+<input
+  type="file"
+  accept="image/*"
+  multiple
+  onChange={(e) => {
+    const files = Array.from(e.target.files);
+
+    if (newRecipe.imageIngredients.length + files.length > 4) {
+      alert("Max 4 ingredient images");
+      return;
+    }
+
+    files.forEach((file) => {
+      scanIngredientImage(file);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewRecipe((prev) => ({
+          ...prev,
+          imageIngredients: [...prev.imageIngredients, reader.result]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  }}
+/>
+
+{/* INGREDIENT IMAGE PREVIEW + DELETE */}
+<div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+  {newRecipe.imageIngredients.map((img, i) => (
+    <div key={i} style={{ position: "relative" }}>
+      <img
+        src={img}
+        style={{ width: 100, borderRadius: 8 }}
+      />
+
+      <button
+        onClick={() => {
+          const updated = newRecipe.imageIngredients.filter((_, idx) => idx !== i);
+          setNewRecipe({ ...newRecipe, imageIngredients: updated });
+        }}
+        style={{
+          position: "absolute",
+          top: -5,
+          right: -5,
+          background: "#ef4444",
+          color: "white",
+          border: "none",
+          borderRadius: "50%",
+          width: 20,
+          height: 20,
+          cursor: "pointer"
+        }}
+      >
+        ✖
+      </button>
+    </div>
+  ))}
+</div>
+
 <strong>Ingredients</strong>
 
 <textarea
@@ -326,6 +822,69 @@ return (
 
 {/* INSTRUCTIONS */}
 
+{/* INSTRUCTION IMAGE UPLOAD */}
+<strong>Scan Instruction Images (max 4)</strong>
+
+<input
+  type="file"
+  accept="image/*"
+  multiple
+  onChange={(e) => {
+    const files = Array.from(e.target.files);
+
+    if (newRecipe.imageInstructions.length + files.length > 4) {
+      alert("Max 4 instruction images");
+      return;
+    }
+
+    files.forEach((file) => {
+      scanInstructionImage(file);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewRecipe((prev) => ({
+          ...prev,
+          imageInstructions: [...prev.imageInstructions, reader.result]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  }}
+/>
+
+{/* INSTRUCTION IMAGE PREVIEW + DELETE */}
+<div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+  {newRecipe.imageInstructions.map((img, i) => (
+    <div key={i} style={{ position: "relative" }}>
+      <img
+        src={img}
+        style={{ width: 100, borderRadius: 8 }}
+      />
+
+      <button
+        onClick={() => {
+          const updated = newRecipe.imageInstructions.filter((_, idx) => idx !== i);
+          setNewRecipe({ ...newRecipe, imageInstructions: updated });
+        }}
+        style={{
+          position: "absolute",
+          top: -5,
+          right: -5,
+          background: "#ef4444",
+          color: "white",
+          border: "none",
+          borderRadius: "50%",
+          width: 20,
+          height: 20,
+          cursor: "pointer"
+        }}
+      >
+        ✖
+      </button>
+    </div>
+  ))}
+</div>
+
 <strong style={{ marginTop: 15, display: "block" }}>
   Instructions
 </strong>
@@ -372,6 +931,18 @@ return (
 />
 
         <button onClick={saveRecipe}>Save Recipe</button>
+        <button
+  onClick={clearRecipeForm}
+  style={{
+    marginLeft: 10,
+    padding: "8px 12px",
+    borderRadius: 8,
+    background: "#ef4444",
+    color: "white"
+  }}
+>
+  🧹 Clear
+</button>
       </div>
     )}
 
@@ -422,6 +993,20 @@ return (
   </span>
 
 </h3>
+
+{r.image && (
+  <img
+    src={r.image}
+    alt={r.name}
+    style={{
+      width: "100%",
+      maxWidth: 300,
+      borderRadius: 12,
+      marginTop: 10
+    }}
+  />
+)}
+
 
             {openRecipe === i && (
               <div>
@@ -576,6 +1161,17 @@ return (
 >
   {r.name}
 </h3>
+
+<img
+  src={r.image}
+  alt={r.name}
+  style={{
+    width: "100%",
+    maxWidth: 300,
+    borderRadius: 12,
+    marginTop: 10
+  }}
+/>
 
           </div>
         ))}
