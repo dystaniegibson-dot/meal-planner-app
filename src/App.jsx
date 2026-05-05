@@ -6,6 +6,8 @@ export default function App() {
   const scanInputRef = useRef(null);
   const inputRefs = useRef([]);
   // ===== STATE ===== //
+  const [editIndex, setEditIndex] = useState(null);
+  const instructionRefs = useRef([]);
   const [pageCount, setPageCount] = useState(1);
 const SPOON_KEY = "83d56aebeba044838de5cc0e187d0850";
   const [scanImage, setScanImage] = useState(null);
@@ -168,7 +170,7 @@ const [zoomImage, setZoomImage] = useState(null);
   const [newRecipe, setNewRecipe] = useState({
     name: "",
     ingredients: [""],
-    instructions: "",
+    instructions: [""],
     imageIngredients: [],
     imageInstructions: [],
     favorite: false,
@@ -510,7 +512,7 @@ const clearRecipeForm = () => {
   setNewRecipe({
     name: "",
     ingredients: [""],
-    instructions: "",
+    instructions:[""],
     imageIngredients: [],
     imageInstructions: [],
     favorite: false,
@@ -547,7 +549,7 @@ const saveRecipe = () => {
     name: "",
     image: "",
     ingredients: [""],
-    instructions: "",
+    instructions: [""],
     imageIngredients: [],
     imageInstructions: [],
     favorite: false,
@@ -584,6 +586,20 @@ const deleteRecipe = (index) => {
   setRecipes(updated);
   localStorage.setItem("recipes", JSON.stringify(updated));
 };
+<button
+  onClick={() => {
+    setNewRecipe({
+      ...r,
+      ingredients: r.ingredients.split("\n"),
+      instructions: r.instructions.split("\n")
+    });
+
+    setEditIndex(i);
+    setPage("new"); // go to edit screen
+  }}
+>
+  ✏️ Edit
+</button>
   // ===== SEARCH =====
   
   // ===== PLANNER =====
@@ -762,8 +778,43 @@ return (
   {newRecipe.ingredients.map((ing, i) => (
     <div key={i} style={{ display: "flex", gap: 8, marginBottom: 5 }}>
       <input
+      onKeyDown={(e) => {
+  // ENTER → add new ingredient
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    const nextIndex = newRecipe.ingredients.length;
+
+    setNewRecipe((prev) => ({
+      ...prev,
+      ingredients: [...prev.ingredients, ""]
+    }));
+
+    setTimeout(() => {
+      inputRefs.current[nextIndex]?.focus();
+    }, 0);
+  }
+
+  // BACKSPACE → delete empty ingredient (except first)
+  if (e.key === "Backspace" && !ing && i > 0) {
+    e.preventDefault();
+
+    const prevIndex = i - 1;
+
+    setNewRecipe((prev) => {
+      const updated = prev.ingredients.filter((_, idx) => idx !== i);
+      return { ...prev, ingredients: updated };
+    });
+
+    setTimeout(() => {
+      inputRefs.current[prevIndex]?.focus();
+    }, 0);
+  }
+}}
+   
         type="text"
         value={ing}
+        ref={(el) => (inputRefs.current[i] = el)}
         onChange={(e) => {
           const updated = [...newRecipe.ingredients];
           updated[i] = e.target.value;
@@ -876,20 +927,61 @@ return (
 </div>
 
 {/* INSTRUCTION TEXT */}
-<textarea
-  placeholder="Instructions..."
-  value={newRecipe.instructions}
-  onChange={(e) =>
-    setNewRecipe({ ...newRecipe, instructions: e.target.value })
-  }
-  style={{
-    width: "100%",
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 8,
-    minHeight: 120
-  }}
-/>
+<div style={{ marginTop: 10 }}>
+  <h4>Instructions</h4>
+
+  {newRecipe.instructions.map((step, i) => (
+    <div key={i} style={{ display: "flex", gap: 8, marginBottom: 5 }}>
+      
+      <input
+      ref={(el) => (instructionRefs.current[i] = el)}
+        type="text"
+        value={`Step ${i + 1}: ${step}`}
+        onKeyDown={(e) => {
+          // ENTER → add new step
+         if (e.key === "Enter") {
+  e.preventDefault();
+
+  const nextIndex = newRecipe.instructions.length;
+
+  setNewRecipe((prev) => ({
+    ...prev,
+    instructions: [...prev.instructions, ""]
+  }));
+
+  setTimeout(() => {
+    instructionRefs.current[nextIndex]?.focus();
+  }, 0);
+}
+          // BACKSPACE → delete empty step (except Step 1)
+          if (e.key === "Backspace" && !step && i > 0) {
+  e.preventDefault();
+
+  const prevIndex = i - 1;
+
+  setNewRecipe((prev) => {
+    const updated = prev.instructions.filter((_, idx) => idx !== i);
+    return { ...prev, instructions: updated };
+  });
+
+  setTimeout(() => {
+    instructionRefs.current[prevIndex]?.focus();
+  }, 0);
+}
+        }}
+        onChange={(e) => {
+  const text = e.target.value.replace(`Step ${i + 1}: `, "");
+
+  const updated = [...newRecipe.instructions];
+  updated[i] = text;
+
+  setNewRecipe({ ...newRecipe, instructions: updated });
+}}
+        style={{ flex: 1, padding: 6, borderRadius: 6 }}
+      />
+    </div>
+  ))}
+</div>
 
           <button onClick={saveRecipe}>Save Recipe</button>
         </div>
@@ -1190,6 +1282,26 @@ return (
   }}
 >
   🗑 Delete Recipe
+</button>
+
+<button
+  onClick={() => {
+    setNewRecipe({
+      ...activeRecipe,
+      ingredients: activeRecipe.ingredients.split("\n"),
+      instructions: activeRecipe.instructions.split("\n")
+    });
+
+    const index = recipes.findIndex(
+      (r) => r.name === activeRecipe.name
+    );
+
+    setEditIndex(index);
+    setActiveRecipe(null); // close popup
+    setPage("new"); // go to edit screen
+  }}
+>
+  ✏️ Edit
 </button>
 
       <h2>{activeRecipe.name}</h2>
