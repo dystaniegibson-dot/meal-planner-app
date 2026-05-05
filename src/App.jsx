@@ -6,7 +6,8 @@ export default function App() {
   const scanInputRef = useRef(null);
   const inputRefs = useRef([]);
   // ===== STATE ===== //
-
+  const [pageCount, setPageCount] = useState(1);
+const SPOON_KEY = "83d56aebeba044838de5cc0e187d0850";
   const [scanImage, setScanImage] = useState(null);
   const [fullRecipePaste, setFullRecipePaste] = useState("");
 const [categoryFilter, setCategoryFilter] = useState("All");
@@ -33,13 +34,9 @@ const filtered = [...recipes].sort((a, b) => {
 });
 
 const [apiRecipes, setApiRecipes] = useState([]);
+const [search, setSearch] = useState("");
 
-useEffect(() => {
-  fetch("https://www.themealdb.com/api/json/v1/1/search.php?s=chicken")
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.meals) {
-        const formatted = data.meals.map((meal) => {
+const formatMeal = (meal) => {
   const ingredients = [];
 
   for (let i = 1; i <= 20; i++) {
@@ -54,38 +51,119 @@ useEffect(() => {
   }
 
   return {
-    name: meal.strMeal,
-    category: meal.strCategory,
+    name: meal.strMeal || "Unknown",
+    category: meal.strCategory || "",
     ingredients,
-    instructions: meal.strInstructions,
-    image: meal.strMealThumb
+    instructions: meal.strInstructions || "",
+    image: meal.strMealThumb || ""
   };
-});
+};
 
-        setApiRecipes(formatted);
-      }
-    });
-}, []);
+useEffect(() => {
+  const fetchMealDB = () => {
+    if (search && search.trim() !== "") {
+      return fetch(
+        `https://www.themealdb.com/api/json/v1/1/search.php?s=${search}`
+      )
+        .then((res) => res.json())
+        .then((data) =>
+          (data.meals || []).map(formatMeal)
+        );
+    } else {
+      return Promise.all(
+        Array.from({ length: 5 * pageCount }).map(() =>
+          fetch("https://www.themealdb.com/api/json/v1/1/random.php")
+            .then((res) => res.json())
+            .then((r) => r.meals && r.meals[0])
+        )
+      ).then((meals) =>
+        meals.filter(Boolean).map(formatMeal)
+      );
+    }
+  };
+
+  const fetchSpoonacular = () => {
+    const query = search || "";
+
+    return fetch(
+      `https://api.spoonacular.com/recipes/complexSearch?query=${query}&number=5 * pageCount &apiKey=${SPOON_KEY}`
+    )
+      .then((res) => res.json())
+      .then((data) =>
+        (data.results || []).map((meal) => ({
+          name: meal.title,
+          category: "",
+          ingredients: [],
+          instructions: "",
+          image: meal.image
+        }))
+      )
+      .catch(() => []);
+  };
+
+  Promise.all([fetchMealDB(), fetchSpoonacular()])
+    .then(([mealDB, spoon]) => {
+      const combined = [...mealDB, ...spoon];
+
+      // 🔥 remove duplicates by name
+      const unique = Array.from(
+        new Map(combined.map((r) => [r.name, r])).values()
+      );
+
+      if (search && search.trim() !== "") {
+  // 🔍 search = replace list
+  setApiRecipes(unique);
+} else {
+  // 🎲 load more = append
+  setApiRecipes((prev) => {
+    const combined = [...prev, ...unique];
+
+    // remove duplicates again
+    return Array.from(
+      new Map(combined.map((r) => [r.name, r])).values()
+    );
+  });
+}
+    })
+    .catch(() => setApiRecipes([]));
+}, [search, pageCount]);
 
 const [plannerRecipe, setPlannerRecipe] = useState(null);
-  const [weeklyPlan, setWeeklyPlan] = useState(() => {
+
+const [weeklyPlan, setWeeklyPlan] = useState(() => {
+  try {
     const saved = localStorage.getItem("weeklyPlan");
-    return saved
-      ? JSON.parse(saved)
-      : {
-          Monday: null,
-          Tuesday: null,
-          Wednesday: null,
-          Thursday: null,
-          Friday: null,
-          Saturday: null,
-          Sunday: null
-        };
-  });
+    const parsed = saved ? JSON.parse(saved) : {};
+
+    const safePlan = {
+      Monday: Array.isArray(parsed?.Monday) ? parsed.Monday : [],
+      Tuesday: Array.isArray(parsed?.Tuesday) ? parsed.Tuesday : [],
+      Wednesday: Array.isArray(parsed?.Wednesday) ? parsed.Wednesday : [],
+      Thursday: Array.isArray(parsed?.Thursday) ? parsed.Thursday : [],
+      Friday: Array.isArray(parsed?.Friday) ? parsed.Friday : [],
+      Saturday: Array.isArray(parsed?.Saturday) ? parsed.Saturday : [],
+      Sunday: Array.isArray(parsed?.Sunday) ? parsed.Sunday : []
+    };
+
+    return safePlan;
+  } catch (e) {
+    console.log("Resetting weeklyPlan");
+
+    return {
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+      Saturday: [],
+      Sunday: []
+    };
+  }
+});
 
   const [showPlanner, setShowPlanner] = useState(null);
   const [openRecipe, setOpenRecipe] = useState(null);
-  const [search, setSearch] = useState("");
+  
 const [zoomImage, setZoomImage] = useState(null);
   const [newRecipe, setNewRecipe] = useState({
     name: "",
@@ -202,30 +280,29 @@ instructionKeywords.forEach((key) => {
 });
 
   // clean instructions
-const instructions = instructionsText
-  .split("\n")
-  .map((line) =>
-    line
-      .replace(/^\d+[\.\)]\s*/, "")
-      .trim()
-  )
-  .filter((line) => {
-    const l = line.toLowerCase();
 
-    return (
-      line &&
-      !l.includes("ingredient") &&
-      !l.includes("method") &&
-      !l.includes("instruction") &&
-      !l.includes("direction") &&
-      !l.includes("step") &&
-      !l.includes("cooking") &&
-      !l.includes("preparation") &&
-      !l.includes("prepare")
-    );
-  })  
-  .map((step, i) => `Step ${i + 1}: ${step}`)
-  .join("\n");
+  const instructions = (() => {
+  let steps = [];
+
+  if (instructionsText.includes(".")) {
+    // ✅ split by sentences
+    steps = instructionsText
+      .replace(/\n/g, " ") // remove line breaks
+      .split(".")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 20); // remove junk
+  } else {
+    // fallback to lines
+    steps = instructionsText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 10);
+  }
+
+  return steps
+    .map((step, i) => `Step ${i + 1}: ${step}`)
+    .join("\n");
+})();
 
   // set values into your app
   setNewRecipe((prev) => ({
@@ -447,10 +524,15 @@ const clearRecipeForm = () => {
 };
 
   // ===== SAVE =====
- const saveRecipe = () => {
+ // ===== SAVE =====
+const saveRecipe = () => {
   const recipe = {
-    ...newRecipe,
-    ingredients: newRecipe.ingredients.join("\n")
+    name: newRecipe.name,
+    image: newRecipe.image || "",
+    ingredients: newRecipe.ingredients.join("\n"),
+    instructions: newRecipe.instructions,
+    category: newRecipe.category,
+    favorite: false
   };
 
   const exists = recipes.some((rec) => rec.name === recipe.name);
@@ -476,7 +558,6 @@ const clearRecipeForm = () => {
   setInstructionPaste("");
   setFullRecipePaste("");
 };
-
   const addSelectedToGrocery = () => {
   const items = Object.keys(selectedItems).filter(
     (item) => selectedItems[item]
@@ -507,10 +588,14 @@ const deleteRecipe = (index) => {
   
   // ===== PLANNER =====
   const assignToDay = (day, recipe) => {
-    const updated = { ...weeklyPlan, [day]: recipe };
-    setWeeklyPlan(updated);
-    localStorage.setItem("weeklyPlan", JSON.stringify(updated));
+  const updated = {
+  ...(weeklyPlan || {}),
+    [day]: [...(weeklyPlan[day] || []), recipe]
   };
+
+  setWeeklyPlan(updated);
+  localStorage.setItem("weeklyPlan", JSON.stringify(updated));
+};
 
 const sampleRecipes = [
   {
@@ -558,571 +643,404 @@ return (
       <button onClick={() => setPage("grocery")}>🛒 Grocery</button>
     </div>
 
-    {/* NEW RECIPE */}
+    {/* TOP INPUT */}
+    <div style={{ marginBottom: 10 }}>
+      <button onClick={runOCR}>📸 Scan Recipe</button>
+    </div>
 
-{/* ====== UI ====== */}
-<div style={{ marginBottom: 10 }}>
- 
+    <textarea
+      placeholder="Paste full recipe here..."
+      value={fullRecipePaste}
+      onChange={(e) => setFullRecipePaste(e.target.value)}
+      style={{ width: "100%", padding: 10, marginBottom: 10 }}
+    />
 
-  <button
-    onClick={runOCR}
-    style={{
-      marginLeft: 10,
-      padding: "6px 10px",
-      borderRadius: 6
-    }}
-  >
-    📸 Scan Recipe
-  </button>
-</div>
+    <button onClick={autoParseRecipe}>⚡ Auto Fill Recipe</button>
 
-<textarea
-  placeholder="Paste full recipe here..."
-  value={fullRecipePaste}
-  onChange={(e) => setFullRecipePaste(e.target.value)}
-  style={{
-    width: "100%",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 8,
-    minHeight: 120
-  }}
-/>
+    {/* PAGES WRAPPER */}
+    <div>
 
-<button
-  onClick={autoParseRecipe}
-  style={{
-    marginBottom: 15,
-    padding: "8px 12px",
-    borderRadius: 8
-  }}
->
-  ⚡ Auto Fill Recipe
-</button>
+      {/* NEW RECIPE */}
+      {page === "new" && (
+        <div style={{ background: "#fffdf5", padding: 20 }}>
+          <h3>Add Recipe</h3>
 
-    {page === "new" && (
-      <div style={{ background: "#fffdf5", padding: 20, borderRadius: 16 }}>
-        <h3>Add Recipe</h3>
+          <input
+            placeholder="Recipe Name"
+            value={newRecipe.name}
+            onChange={(e) =>
+              setNewRecipe({ ...newRecipe, name: e.target.value })
+            }
+          />
 
-        <input
-          placeholder="Recipe Name"
-          value={newRecipe.name}
-          onChange={(e) =>
-            setNewRecipe({ ...newRecipe, name: e.target.value })
-          }
-          style={{ width: "100%", padding: 10, marginBottom: 10 }}
-        />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (!file) return;
 
-<input
-  type="file"
-  accept="image/*"
-  onChange={(e) => {
-    const file = e.target.files[0];
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                setNewRecipe((prev) => ({
+                  ...prev,
+                  image: event.target.result
+                }));
+              };
+              reader.readAsDataURL(file);
+            }}
+          />
 
-    if (!file) {
-      console.log("No file selected");
-      return;
-    }
+          {newRecipe.image && (
+            <img src={newRecipe.image} style={{ width: 200 }} />
+          )}
 
-    console.log("File selected:", file);
+{/* INGREDIENT IMAGES */}
+<div style={{ marginTop: 15 }}>
+  <h4>Ingredients Images</h4>
+
+  <input
+    type="file"
+    accept="image/*"
+    multiple
+    onChange={(e) => {
+  const files = Array.from(e.target.files).slice(0, 4);
+
+  files.forEach((file) => {
+    scanIngredientImage(file);
 
     const reader = new FileReader();
-
-    reader.onload = (event) => {
-      console.log("Image loaded:", event.target.result);
-
+    reader.onloadend = () => {
       setNewRecipe((prev) => ({
         ...prev,
-        image: event.target.result
+        imageIngredients: [...prev.imageIngredients, reader.result].slice(0, 4)
       }));
-    };
-
-    reader.onerror = (err) => {
-      console.error("FileReader error:", err);
     };
 
     reader.readAsDataURL(file);
-  }}
-  style={{ marginBottom: 10 }}
-/>
+  });
+}}
+  />
 
-{newRecipe.image && (
-  <div style={{ marginTop: 10 }}>
-    <div style={{ position: "relative", width: 200 }}>
-      <img
-        src={newRecipe.image}
-        alt="recipe"
-        style={{
-          width: "100%",
-          borderRadius: 10
-        }}
-      />
+  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+    {newRecipe.imageIngredients.map((img, i) => (
+      <div key={i} style={{ position: "relative" }}>
+        <img src={img} style={{ width: 100, borderRadius: 8 }} />
 
-      <button
-        onClick={() =>
-          setNewRecipe((prev) => ({
-            ...prev,
-            image: ""
-          }))
-        }
-        style={{
-          position: "absolute",
-          top: -10,
-          right: -10,
-          background: "#ef4444",
-          color: "white",
-          border: "none",
-          borderRadius: "50%",
-          width: 28,
-          height: 28,
-          cursor: "pointer"
-        }}
-      >
-        ✖
-      </button>
-    </div>
+        <button
+          onClick={() => {
+            setNewRecipe((prev) => ({
+              ...prev,
+              imageIngredients: prev.imageIngredients.filter((_, idx) => idx !== i)
+            }));
+          }}
+          style={{
+            position: "absolute",
+            top: -8,
+            right: -8,
+            background: "#ef4444",
+            color: "white",
+            border: "none",
+            borderRadius: "50%",
+            width: 20,
+            height: 20,
+            cursor: "pointer"
+          }}
+        >
+          ✖
+        </button>
+      </div>
+    ))}
   </div>
-)}
-
-      {/* INGREDIENT IMAGE UPLOAD */}
-<strong>Scan Ingredient Images (max 4)</strong>
-
-<input
-  type="file"
-  accept="image/*"
-  multiple
-  onChange={(e) => {
-    const files = Array.from(e.target.files);
-
-    if (newRecipe.imageIngredients.length + files.length > 4) {
-      alert("Max 4 ingredient images");
-      return;
-    }
-
-    files.forEach((file) => {
-      scanIngredientImage(file);
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewRecipe((prev) => ({
-          ...prev,
-          imageIngredients: [...prev.imageIngredients, reader.result]
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
-  }}
-/>
-
-{/* INGREDIENT IMAGE PREVIEW + DELETE */}
-<div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-  {newRecipe.imageIngredients.map((img, i) => (
-    <div key={i} style={{ position: "relative" }}>
-      <img
-        src={img}
-        style={{ width: 100, borderRadius: 8 }}
-      />
-
-      <button
-        onClick={() => {
-          const updated = newRecipe.imageIngredients.filter((_, idx) => idx !== i);
-          setNewRecipe({ ...newRecipe, imageIngredients: updated });
-        }}
-        style={{
-          position: "absolute",
-          top: -5,
-          right: -5,
-          background: "#ef4444",
-          color: "white",
-          border: "none",
-          borderRadius: "50%",
-          width: 20,
-          height: 20,
-          cursor: "pointer"
-        }}
-      >
-        ✖
-      </button>
-    </div>
-  ))}
 </div>
 
-<strong>Ingredients</strong>
+{/* INGREDIENT TEXT */}
+{/* INGREDIENT INPUTS */}
+<div style={{ marginTop: 10 }}>
+  <h4>Ingredients</h4>
 
-<textarea
-  placeholder="Paste ingredients here..."
-  value={ingredientPaste}
-  onChange={(e) => setIngredientPaste(e.target.value)}
-  style={{
-    width: "100%",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 8
-  }}
-  onBlur={(e) => {
-    let text = e.target.value;
+  {newRecipe.ingredients.map((ing, i) => (
+    <div key={i} style={{ display: "flex", gap: 8, marginBottom: 5 }}>
+      <input
+        type="text"
+        value={ing}
+        onChange={(e) => {
+          const updated = [...newRecipe.ingredients];
+          updated[i] = e.target.value;
+          setNewRecipe({ ...newRecipe, ingredients: updated });
+        }}
+        style={{ flex: 1, padding: 6, borderRadius: 6 }}
+      />
 
-    let lines = text.split("\n");
+      {ing && (
+  <button
+    onClick={() => {
+      const updated = newRecipe.ingredients.filter((_, idx) => idx !== i);
 
-    if (lines.length === 1) {
-      lines = text.split(",");
-    }
-
-    lines = lines
-      .map((l) => l.trim())
-      .filter((l) => l !== "");
-
-    if (lines.length > 0) {
-      setNewRecipe((prev) => ({
-        ...prev,
-        ingredients: lines
-      }));
-    }
-  }}
-/>
-
-{newRecipe.ingredients.map((item, index) => (
-  <input
-  key={index}
-  value={item}
-  placeholder="Enter ingredient"
-  onChange={(e) => {
-    const updated = [...newRecipe.ingredients];
-    updated[index] = e.target.value;
-    setNewRecipe({
-      ...newRecipe,
-      ingredients: updated
-    });
-  }}
-  onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-
-      const updated = [...newRecipe.ingredients, ""];
       setNewRecipe({
         ...newRecipe,
-        ingredients: updated
+        ingredients: updated.length ? updated : [""]
       });
-
-      // optional: move focus to next input
-      setTimeout(() => {
-        const inputs = document.querySelectorAll("input");
-        inputs[inputs.length - 1]?.focus();
-      }, 0);
-    }
-  }}
-  style={{
-    display: "block",
-    width: "100%",
-    padding: 8,
-    marginBottom: 5
-  }}
-/>
-))}
-
-{/* INSTRUCTIONS */}
-
-{/* INSTRUCTION IMAGE UPLOAD */}
-<strong>Scan Instruction Images (max 4)</strong>
-
-<input
-  type="file"
-  accept="image/*"
-  multiple
-  onChange={(e) => {
-    const files = Array.from(e.target.files);
-
-    if (newRecipe.imageInstructions.length + files.length > 4) {
-      alert("Max 4 instruction images");
-      return;
-    }
-
-    files.forEach((file) => {
-      scanInstructionImage(file);
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewRecipe((prev) => ({
-          ...prev,
-          imageInstructions: [...prev.imageInstructions, reader.result]
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
-  }}
-/>
-
-{/* INSTRUCTION IMAGE PREVIEW + DELETE */}
-<div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-  {newRecipe.imageInstructions.map((img, i) => (
-    <div key={i} style={{ position: "relative" }}>
-      <img
-        src={img}
-        style={{ width: 100, borderRadius: 8 }}
-      />
-
-      <button
-        onClick={() => {
-          const updated = newRecipe.imageInstructions.filter((_, idx) => idx !== i);
-          setNewRecipe({ ...newRecipe, imageInstructions: updated });
-        }}
-        style={{
-          position: "absolute",
-          top: -5,
-          right: -5,
-          background: "#ef4444",
-          color: "white",
-          border: "none",
-          borderRadius: "50%",
-          width: 20,
-          height: 20,
-          cursor: "pointer"
-        }}
-      >
-        ✖
-      </button>
+    }}
+    style={{
+      background: "#ef4444",
+      color: "white",
+      border: "none",
+      borderRadius: "50%",
+      width: 24,
+      height: 24,
+      cursor: "pointer"
+    }}
+  >
+    ✖
+  </button>
+)}
     </div>
   ))}
+
+  <button
+    onClick={() =>
+      setNewRecipe({
+        ...newRecipe,
+        ingredients: [...newRecipe.ingredients, ""]
+      })
+    }
+    style={{
+      marginTop: 5,
+      padding: "6px 10px",
+      borderRadius: 6,
+      cursor: "pointer"
+    }}
+  >
+    ➕ Add Ingredient
+  </button>
 </div>
 
-<strong style={{ marginTop: 15, display: "block" }}>
-  Instructions
-</strong>
+{/* INSTRUCTION IMAGES */}
+<div style={{ marginTop: 15 }}>
+  <h4>Instruction Images</h4>
 
-<textarea
-  placeholder="Paste instructions here..."
-  value={instructionPaste}
-  onChange={(e) => setInstructionPaste(e.target.value)}
-  style={{
-    width: "100%",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 8
-  }}
-  onBlur={(e) => {
-    const lines = e.target.value
-      .split("\n")
-      .map((l) => l.trim())
-      .filter((l) => l !== "");
+  <input
+    type="file"
+    accept="image/*"
+    multiple
+    onChange={(e) => {
+  const files = Array.from(e.target.files).slice(0, 4);
 
-    if (lines.length > 0) {
-      const formatted = lines
-        .map((line, i) => `Step ${i + 1}: ${line}`)
-        .join("\n");
+  files.forEach((file) => {
+    scanInstructionImage(file);
 
+    const reader = new FileReader();
+    reader.onloadend = () => {
       setNewRecipe((prev) => ({
         ...prev,
-        instructions: formatted
+        imageInstructions: [...prev.imageInstructions, reader.result].slice(0, 4)
       }));
-    }
-  }}
-/>
+    };
 
+    reader.readAsDataURL(file);
+  });
+}}
+  />
+
+  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+    {newRecipe.imageInstructions.map((img, i) => (
+      <div key={i} style={{ position: "relative" }}>
+        <img src={img} style={{ width: 100, borderRadius: 8 }} />
+
+        <button
+          onClick={() => {
+            setNewRecipe((prev) => ({
+              ...prev,
+              imageInstructions: prev.imageInstructions.filter((_, idx) => idx !== i)
+            }));
+          }}
+          style={{
+            position: "absolute",
+            top: -8,
+            right: -8,
+            background: "#ef4444",
+            color: "white",
+            border: "none",
+            borderRadius: "50%",
+            width: 20,
+            height: 20,
+            cursor: "pointer"
+          }}
+        >
+          ✖
+        </button>
+      </div>
+    ))}
+  </div>
+</div>
+
+{/* INSTRUCTION TEXT */}
 <textarea
+  placeholder="Instructions..."
   value={newRecipe.instructions}
   onChange={(e) =>
     setNewRecipe({ ...newRecipe, instructions: e.target.value })
   }
   style={{
     width: "100%",
+    marginTop: 10,
     padding: 10,
+    borderRadius: 8,
     minHeight: 120
   }}
 />
 
-        <button onClick={saveRecipe}>Save Recipe</button>
-        <button
-  onClick={clearRecipeForm}
-  style={{
-    marginLeft: 10,
-    padding: "8px 12px",
-    borderRadius: 8,
-    background: "#ef4444",
-    color: "white"
-  }}
->
-  🧹 Clear
-</button>
-      </div>
-    )}
+          <button onClick={saveRecipe}>Save Recipe</button>
+        </div>
+      )}
 
-    {/* RECIPE BOOK */}
-    {page === "book" && (
-      <div>
-        <h2>📖 Recipe Book</h2>
+      {/* RECIPE BOOK */}
+      {page === "book" && (
+        <div>
+          <h2>📖 Recipe Book</h2>
 
-        {filtered.map((r, i) => (
-          <div key={i} style={{ background: "white", padding: 15 }}>
-            <h3 style={{ display: "flex", alignItems: "center", gap: 10 }}>
-
-  {/* Expand toggle */}
-  <span
-    onClick={() =>
-      setOpenRecipe(openRecipe === i ? null : i)
-    }
-    style={{ cursor: "pointer" }}
-  >
-    {openRecipe === i ? "▼" : "▶"}
-  </span>
-
-<span
-  onClick={() => {
-    const updated = recipes.map((recipe) =>
-      recipe.name === r.name
-        ? { ...recipe, favorite: !recipe.favorite }
-        : recipe
-    );
-
-    setRecipes(updated);
-    localStorage.setItem("recipes", JSON.stringify(updated));
-  }}
-  style={{
-    cursor: "pointer",
-    fontSize: 18
-  }}
->
-  {r.favorite ? "⭐" : "☆"}
-</span>
-
-  {/* Recipe name → popup */}
-  <span
-    onClick={() => setActiveRecipe(r)}
-    style={{ cursor: "pointer" }}
-  >
-    {r.name}
-  </span>
-
-</h3>
-
-{r.image && (
+          {filtered.map((r, i) => (
+            <div key={i} style={{ background: "white", padding: 15 }}>
+              <h3>
+                {r.image && (
   <img
     src={r.image}
     alt={r.name}
     style={{
       width: "100%",
-      maxWidth: 300,
-      borderRadius: 12,
+      maxWidth: 250,
+      borderRadius: 10,
       marginTop: 10
     }}
   />
 )}
+                <span
+  onClick={() => setActiveRecipe(r)}
+  style={{ cursor: "pointer" }}
+>
+  ▶
+</span>
 
+                <span
+                  onClick={() => {
+                    const updated = recipes.map((recipe) =>
+                      recipe.name === r.name
+                        ? { ...recipe, favorite: !recipe.favorite }
+                        : recipe
+                    );
+                    setRecipes(updated);
+                    localStorage.setItem("recipes", JSON.stringify(updated));
+                  }}
+                >
+                  {r.favorite ? "⭐" : "☆"}
+                </span>
 
-            {openRecipe === i && (
-              <div>
-                <p>{r.category}</p>
+                <span onClick={() => setActiveRecipe(r)}>
+                  {r.name}
+                </span>
+              </h3>
 
-                {(Array.isArray(r.ingredients)
-  ? r.ingredients
-  : r.ingredients?.split("\n") || []
-).map((item, idx) => (
-  <div key={idx}>
-    <label>
-      <input
-        type="checkbox"
-        checked={!!selectedItems[item]}
-        onChange={() =>
-          setSelectedItems((prev) => ({
-            ...prev,
-            [item]: !prev[item]
-          }))
-        }
-      />
-      {item}
-    </label>
-  </div>
-))}
+              
+            </div>
+          ))}
+        </div>
+      )}
 
-                <p>{r.instructions}</p>
+     {/* PLANNER */}
+{page === "planner" && (
+  <div>
+    <h2>📅 Planner</h2>
 
-                <button onClick={addSelectedToGrocery}>
-                  Add to Grocery
-                </button>
+    {Object.keys(weeklyPlan || {
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+      Saturday: [],
+      Sunday: []
+    }).map((day) => (
+      <div key={day}>
+        <strong>{day}</strong>
 
-                <button onClick={() => setPlannerRecipe(r)}>
-                  Add to Planner
-                </button>
+        {((weeklyPlan && weeklyPlan[day]) || []).map((r, i) => (
+  <div
+  key={i}
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10
+  }}
+>
+    <span>• {r.name}</span>
 
-                <button onClick={() => deleteRecipe(i)}>
-                  Delete
-                </button>
-
-                {plannerRecipe === r && (
-                  <div>
-                    {Object.keys(weeklyPlan).map((day) => (
-                      <button
-                        key={day}
-                        onClick={() => {
-                          assignToDay(day, r);
-                          setPlannerRecipe(null);
-                        }}
-                      >
-                        {day}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    )}
-
-    {/* PLANNER */}
-    {page === "planner" && (
-      <div>
-        <h2>📅 Weekly Plan</h2>
-        {Object.keys(weeklyPlan).map((day) => (
-          <div key={day}>
-  <strong>{day}:</strong>{" "}
-
-  <span
-    onClick={() => setActiveRecipe(weeklyPlan[day])}
-    style={{ cursor: "pointer" }}
-  >
-    {weeklyPlan[day]?.name || "No meal planned"}
-  </span>
-
-  {weeklyPlan[day] && (
     <button
-      onClick={() =>
-        setWeeklyPlan((prev) => ({
-          ...prev,
-          [day]: null
-        }))
-      }
+      onClick={() => {
+        const updatedDay = weeklyPlan[day].filter((_, idx) => idx !== i);
+
+        const updated = {
+          ...weeklyPlan,
+          [day]: updatedDay
+        };
+
+        setWeeklyPlan(updated);
+        localStorage.setItem("weeklyPlan", JSON.stringify(updated));
+      }}
       style={{
-        marginLeft: 10,
         background: "#ef4444",
         color: "white",
-        borderRadius: 6,
-        padding: "2px 6px"
+        border: "none",
+        borderRadius: "50%",
+        width: 24,
+        height: 24,
+        cursor: "pointer"
       }}
     >
-      ❌
+      ✖
     </button>
-  )}
-</div>
-        ))}
+  </div>
+))}
       </div>
-    )}
+    ))}
+  </div>
+)}
 
-    {/* GROCERY */}
-    {page === "grocery" && (
-      <div>
-        <h2>🛒 Grocery List</h2>
-        {groceryList.map((item, i) => (
+      {/* GROCERY */}
+      {page === "grocery" && (
+        <div>
+          <h2>🛒 Grocery</h2>
+
+          {groceryList.map((item, i) => (
   <div
     key={i}
     style={{
       display: "flex",
-      justifyContent: "space-between",
       alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
       marginBottom: 5
     }}
   >
-    <span>{item}</span>
+    <input
+      type="checkbox"
+      checked={checkedItems[item] || false}
+      onChange={() =>
+        setCheckedItems((prev) => ({
+          ...prev,
+          [item]: !prev[item]
+        }))
+      }
+    />
+
+    <span
+      style={{
+        textDecoration: checkedItems[item] ? "line-through" : "none"
+      }}
+    >
+      {item}
+    </span>
 
     <button
       onClick={() => {
@@ -1133,53 +1051,77 @@ return (
       style={{
         background: "#ef4444",
         color: "white",
-        borderRadius: 6,
-        padding: "2px 8px"
+        border: "none",
+        borderRadius: "50%",
+        width: 24,
+        height: 24,
+        cursor: "pointer"
       }}
     >
-      ❌
+      ✖
     </button>
   </div>
 ))}
-      </div>
-    )}
+        </div>
+      )}
 
-    {/* DISCOVER */}
-    {page === "discover" && (
-      <div>
-        <h2>🔍 Discover Recipes</h2>
+      {/* DISCOVER */}
+      {page === "discover" && (
+        <div>
+          <h2>🔍 Discover</h2>
 
-        {apiRecipes.map((r, i) => (
-          <div key={i}>
-           <h3
-  onClick={() => setActiveRecipe(r)}
-  style={{
-    cursor: "pointer",
-    color: "#2563eb",
-    textDecoration: "underline"
-  }}
->
-  {r.name}
-</h3>
-
-<img
-  src={r.image}
-  alt={r.name}
+<input
+  type="text"
+  placeholder="Search recipes..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
   style={{
     width: "100%",
-    maxWidth: 300,
-    borderRadius: 12,
-    marginTop: 10
+    padding: 8,
+    marginBottom: 10,
+    borderRadius: 8
   }}
 />
 
-          </div>
-        ))}
-      </div>
-    )}
+          {(apiRecipes || []).map((r, i) => {
+  if (!r) return null;
 
-{/* POPUPS */}
-    {activeRecipe && (
+  return (
+    <div key={i}>
+      <h3
+        onClick={() => setActiveRecipe(r)}
+        style={{ cursor: "pointer" }}
+      >
+        {r.name || "No Name"}
+      </h3>
+
+      {r.image && (
+        <img
+          src={r.image}
+          alt={r.name}
+          style={{ width: 200 }}
+        />
+      )}
+    </div>
+  );
+})}
+
+<button
+  onClick={() => setPageCount((prev) => prev + 1)}
+  style={{
+    marginTop: 20,
+    padding: "10px 15px",
+    borderRadius: 8,
+    cursor: "pointer"
+  }}
+>
+  🔄 Load More
+</button>
+
+        </div>
+      )}
+
+{activeRecipe && (
   <div
     onClick={() => setActiveRecipe(null)}
     style={{
@@ -1198,93 +1140,155 @@ return (
     <div
       onClick={(e) => e.stopPropagation()}
       style={{
+        position: "relative",
         background: "#fffdf5",
-        padding: 25,
-        borderRadius: 20,
+        padding: 20,
+        borderRadius: 10,
         width: "90%",
-        maxWidth: 650,
+        maxWidth: 600,
         maxHeight: "90%",
-        overflowY: "auto",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+        overflowY: "auto"
       }}
     >
       <button
-        onClick={() => setActiveRecipe(null)}
-        style={{
-          float: "right",
-          background: "#ef4444",
-          color: "white",
-          borderRadius: 6,
-          padding: "4px 8px"
-        }}
-      >
-        ✖
-      </button>
-
-      <h2>{activeRecipe.name}</h2>
-      <p><strong>Category:</strong> {activeRecipe.category}</p>
+  onClick={() => setActiveRecipe(null)}
+  style={{
+    position: "absolute",
+    top: 10,
+    right: 10,
+    background: "#ef4444",
+    color: "white",
+    border: "none",
+    borderRadius: "50%",
+    width: 28,
+    height: 28,
+    cursor: "pointer"
+  }}
+>
+  ✖
+</button>
 
 <button
   onClick={() => {
-    const exists = recipes.some(
-      (rec) => rec.name === activeRecipe.name
+    const updated = recipes.filter(
+      (rec) => rec.name !== activeRecipe.name
     );
 
-    if (!exists) {
-      const updated = [...recipes, activeRecipe];
-      setRecipes(updated);
-      localStorage.setItem(
-        "recipes",
-        JSON.stringify(updated)
-      );
-    }
+    setRecipes(updated);
+    localStorage.setItem("recipes", JSON.stringify(updated));
 
-    setAddedRecipes((prev) => ({
-      ...prev,
-      [activeRecipe.name]: true
-    }));
+    setActiveRecipe(null);
   }}
   style={{
     marginTop: 10,
-    padding: "8px 12px",
-    borderRadius: 8,
-    background: addedRecipes[activeRecipe.name]
-      ? "#10b981"
-      : "#e5e7eb",
-    color: addedRecipes[activeRecipe.name]
-      ? "white"
-      : "black"
+    padding: "6px 10px",
+    borderRadius: 6,
+    background: "#ef4444",
+    color: "white",
+    border: "none",
+    cursor: "pointer"
   }}
 >
-  {addedRecipes[activeRecipe.name]
-    ? "✅ Added"
-    : "➕ Add to My Recipes"}
+  🗑 Delete Recipe
+</button>
+
+      <h2>{activeRecipe.name}</h2>
+
+      <button
+  onClick={() => setPlannerRecipe(activeRecipe)}
+  style={{
+    marginTop: 10,
+    padding: "6px 10px",
+    borderRadius: 6,
+    background: "#8b5cf6",
+    color: "white",
+    border: "none",
+    cursor: "pointer"
+  }}
+>
+  📅 Add to Planner
+</button>
+
+      <button
+        onClick={() => {
+          const exists = recipes.some(
+            (rec) => rec.name === activeRecipe.name
+          );
+
+          if (!exists) {
+            const updated = [...recipes, activeRecipe];
+            setRecipes(updated);
+            localStorage.setItem("recipes", JSON.stringify(updated));
+          }
+        }}
+      >
+        ➕ Add to My Recipes
+      </button>
+
+
+
+<button
+  onClick={() => {
+    const selected = Object.keys(selectedItems).filter(
+      (item) => selectedItems[item]
+    );
+
+    const updated = [...new Set([...groceryList, ...selected])];
+
+    setGroceryList(updated);
+    localStorage.setItem("groceryList", JSON.stringify(updated));
+
+    setSelectedItems({});
+  }}
+  style={{
+    marginBottom: 10,
+    padding: "6px 10px",
+    borderRadius: 6,
+    background: "#3b82f6",
+    color: "white",
+    border: "none",
+    cursor: "pointer"
+  }}
+>
+  ➕ Add Selected Ingredients
 </button>
 
       <div>
         <strong>Ingredients:</strong>
         {(Array.isArray(activeRecipe.ingredients)
-          ? activeRecipe.ingredients
-          : activeRecipe.ingredients?.split("\n") || []
-        ).map((item, idx) => (
-          <div key={idx}>• {item}</div>
-        ))}
+  ? activeRecipe.ingredients
+  : activeRecipe.ingredients?.split("\n") || []
+).map((item, i) => (
+  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <input
+      type="checkbox"
+      checked={selectedItems[item] || false}
+      onChange={() =>
+        setSelectedItems((prev) => ({
+          ...prev,
+          [item]: !prev[item]
+        }))
+      }
+    />
+
+    <span>• {item}</span>
+  </div>
+))}
       </div>
 
-      <div style={{ marginTop: 15 }}>
+      <div>
         <strong>Instructions:</strong>
         {(activeRecipe.instructions || "")
           .split("\n")
-          .map((step, idx) => (
-            <div key={idx}>
-              {idx + 1}. {step}
-            </div>
+          .map((step, i) => (
+            <div key={i}>{step}</div>
           ))}
       </div>
     </div>
   </div>
 )}
+
     </div>
+  </div>
 );
 }
-
