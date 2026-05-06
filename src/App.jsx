@@ -6,6 +6,8 @@ export default function App() {
   const scanInputRef = useRef(null);
   const inputRefs = useRef([]);
   // ===== STATE ===== //
+  const [plannerFeedback, setPlannerFeedback] = useState("");
+  const [openDay, setOpenDay] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
   const instructionRefs = useRef([]);
   const [pageCount, setPageCount] = useState(1);
@@ -256,30 +258,16 @@ instructionKeywords.forEach((key) => {
 
   // clean ingredients
   const ingredients = ingredientsText
-    .split("\n")
-    .map((line) =>
-      line
-        .replace(/^\d+[\.\)]\s*/, "") // remove "1." or "1)"
-        .trim()
-    )
-    .filter((line) => {
-  const l = line.toLowerCase();
-
-  return (
-    line &&
-    !l.includes("preheat") &&
-    !l.includes("oven") &&
-    !l.includes("heat") &&
-    !l.includes("ingredient") &&
-    !l.includes("method") &&
-    !l.includes("instruction") &&
-    !l.includes("direction") &&
-    !l.includes("step") &&
-    !l.includes("cooking") &&
-    !l.includes("preparation") &&
-    !l.includes("prepare")
+  .split("\n")
+  .map((line) => line.trim())
+  .filter(
+    (line) =>
+      line &&
+      !line.toLowerCase().includes("ingredients")
   );
-});
+
+const safeIngredients =
+  ingredients.length > 0 ? ingredients : [""];
 
   // clean instructions
 
@@ -289,7 +277,8 @@ instructionKeywords.forEach((key) => {
   if (instructionsText.includes(".")) {
     // ✅ split by sentences
     steps = instructionsText
-      .replace(/\n/g, " ") // remove line breaks
+      .replace(/\n/g, " ")
+      .replace(/instructions:?/gi, "") // remove line breaks
       .split(".")
       .map((s) => s.trim())
       .filter((s) => s.length > 20); // remove junk
@@ -301,17 +290,18 @@ instructionKeywords.forEach((key) => {
       .filter((l) => l.length > 10);
   }
 
-  return steps
-    .map((step, i) => `Step ${i + 1}: ${step}`)
-    .join("\n");
+  return steps;
+    
+    
 })();
 
   // set values into your app
   setNewRecipe((prev) => ({
-    ...prev,
-    ingredients,
-    instructions
-  }));
+  ...prev,
+  name: extractRecipeName(text),
+  ingredients: safeIngredients,
+  instructions
+}));
 
   setIngredientPaste("");
   setInstructionPaste("");
@@ -610,6 +600,7 @@ const deleteRecipe = (index) => {
   };
 
   setWeeklyPlan(updated);
+ 
   localStorage.setItem("weeklyPlan", JSON.stringify(updated));
 };
 
@@ -643,6 +634,7 @@ const sampleRecipes = [
 return (
   <div
     style={{
+      color: "#222",
       padding: 20,
       minHeight: "100vh",
       background: "linear-gradient(to bottom, #fff7ed, #fde68a)"
@@ -660,18 +652,9 @@ return (
     </div>
 
     {/* TOP INPUT */}
-    <div style={{ marginBottom: 10 }}>
-      <button onClick={runOCR}>📸 Scan Recipe</button>
-    </div>
+    
 
-    <textarea
-      placeholder="Paste full recipe here..."
-      value={fullRecipePaste}
-      onChange={(e) => setFullRecipePaste(e.target.value)}
-      style={{ width: "100%", padding: 10, marginBottom: 10 }}
-    />
-
-    <button onClick={autoParseRecipe}>⚡ Auto Fill Recipe</button>
+    
 
     {/* PAGES WRAPPER */}
     <div>
@@ -680,6 +663,26 @@ return (
       {page === "new" && (
         <div style={{ background: "#fffdf5", padding: 20 }}>
           <h3>Add Recipe</h3>
+
+          <textarea
+      placeholder="Paste full recipe here..."
+      value={fullRecipePaste}
+      onChange={(e) => setFullRecipePaste(e.target.value)}
+      style={{ width: "100%", padding: 10, marginBottom: 10 }}
+    />
+
+    <button
+  onClick={autoParseRecipe}
+  style={{
+    display: "block",
+    marginBottom: 10,
+    padding: "8px 12px",
+    borderRadius: 8,
+    cursor: "pointer"
+  }}
+>
+  ⚡ Auto Fill Recipe
+</button>
 
           <input
             placeholder="Recipe Name"
@@ -778,6 +781,7 @@ return (
   {newRecipe.ingredients.map((ing, i) => (
     <div key={i} style={{ display: "flex", gap: 8, marginBottom: 5 }}>
       <input
+      placeholder="Add ingredients here..."
       onKeyDown={(e) => {
   // ENTER → add new ingredient
   if (e.key === "Enter") {
@@ -979,6 +983,33 @@ return (
 }}
         style={{ flex: 1, padding: 6, borderRadius: 6 }}
       />
+
+      {step && (
+  <button
+    onClick={() => {
+      const updated = newRecipe.instructions.filter(
+        (_, idx) => idx !== i
+      );
+
+      setNewRecipe({
+        ...newRecipe,
+        instructions: updated.length ? updated : [""]
+      });
+    }}
+    style={{
+      background: "#ef4444",
+      color: "white",
+      border: "none",
+      borderRadius: "50%",
+      width: 24,
+      height: 24,
+      cursor: "pointer"
+    }}
+  >
+    ✖
+  </button>
+)}
+
     </div>
   ))}
 </div>
@@ -995,18 +1026,7 @@ return (
           {filtered.map((r, i) => (
             <div key={i} style={{ background: "white", padding: 15 }}>
               <h3>
-                {r.image && (
-  <img
-    src={r.image}
-    alt={r.name}
-    style={{
-      width: "100%",
-      maxWidth: 250,
-      borderRadius: 10,
-      marginTop: 10
-    }}
-  />
-)}
+                
                 <span
   onClick={() => setActiveRecipe(r)}
   style={{ cursor: "pointer" }}
@@ -1042,61 +1062,159 @@ return (
      {/* PLANNER */}
 {page === "planner" && (
   <div>
-    <h2>📅 Planner</h2>
+  <h2>📅 Planner</h2>
 
-    {Object.keys(weeklyPlan || {
-      Monday: [],
-      Tuesday: [],
-      Wednesday: [],
-      Thursday: [],
-      Friday: [],
-      Saturday: [],
-      Sunday: []
-    }).map((day) => (
-      <div key={day}>
-        <strong>{day}</strong>
-
-        {((weeklyPlan && weeklyPlan[day]) || []).map((r, i) => (
   <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+      gap: 15,
+      marginTop: 20
+    }}
+  >
+    {Object.keys(weeklyPlan).map((day) => (
+      <div
+  key={day}
+  onClick={() => setOpenDay(day)}
+  style={{
+    background: "#fffdf5",
+    borderRadius: 12,
+    padding: 15,
+    minHeight: 120,
+    cursor: "pointer",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+  }}
+>
+  <h3>{day}</h3>
+
+  <div style={{ marginTop: 10 }}>
+    {(weeklyPlan[day] || []).slice(0, 3).map((r, i) => (
+      <div key={i}>• {r.name}</div>
+    ))}
+
+    {(weeklyPlan[day] || []).length > 3 && (
+      <div style={{ marginTop: 5, fontSize: 14 }}>
+        +{weeklyPlan[day].length - 3} more
+      </div>
+    )}
+  </div>
+</div>
+       
+    ))}
+  </div>
+
+{openDay && (
+  <div
+    onClick={() => setOpenDay(null)}
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "rgba(0,0,0,0.6)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 3000
+    }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        position: "relative",
+        background: "#fffdf5",
+        padding: 20,
+        borderRadius: 12,
+        width: "90%",
+        maxWidth: 500
+      }}
+    >
+
+<button
+  onClick={() => setOpenDay(null)}
+  style={{
+    position: "absolute",
+    top: 10,
+    right: 10,
+    background: "#ef4444",
+    color: "white",
+    border: "none",
+    borderRadius: "50%",
+    width: 28,
+    height: 28,
+    cursor: "pointer"
+  }}
+>
+  ✖
+</button>
+
+      <h2>{openDay}</h2>
+
+      {(weeklyPlan[openDay] || []).map((r, i) => (
+       <div
   key={i}
   style={{
     display: "flex",
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 10
+    padding: 10,
+    marginBottom: 8,
+    background: "#fef3c7",
+    borderRadius: 8
   }}
 >
-    <span>• {r.name}</span>
+  <span
+    onClick={() => setActiveRecipe(r)}
+    style={{
+      cursor: "pointer",
+      flex: 1
+    }}
+  >
+    • {r.name}
+  </span>
 
-    <button
-      onClick={() => {
-        const updatedDay = weeklyPlan[day].filter((_, idx) => idx !== i);
+  <button
+    onClick={() => {
+      const updatedDay = weeklyPlan[openDay].filter(
+        (_, idx) => idx !== i
+      );
 
-        const updated = {
-          ...weeklyPlan,
-          [day]: updatedDay
-        };
+      const updated = {
+        ...weeklyPlan,
+        [openDay]: updatedDay
+      };
 
-        setWeeklyPlan(updated);
-        localStorage.setItem("weeklyPlan", JSON.stringify(updated));
-      }}
-      style={{
-        background: "#ef4444",
-        color: "white",
-        border: "none",
-        borderRadius: "50%",
-        width: 24,
-        height: 24,
-        cursor: "pointer"
-      }}
-    >
-      ✖
-    </button>
+if (updatedDay.length === 0) {
+  setOpenDay(null);
+}
+
+      setWeeklyPlan(updated);
+
+      localStorage.setItem(
+        "weeklyPlan",
+        JSON.stringify(updated)
+      );
+    }}
+    style={{
+      background: "#ef4444",
+      color: "white",
+      border: "none",
+      borderRadius: "50%",
+      width: 24,
+      height: 24,
+      cursor: "pointer"
+    }}
+  >
+    ✖
+  </button>
+</div> 
+      ))}
+    </div>
   </div>
-))}
-      </div>
-    ))}
-  </div>
+)}
+
+</div>
 )}
 
       {/* GROCERY */}
@@ -1304,22 +1422,71 @@ return (
   ✏️ Edit
 </button>
 
-      <h2>{activeRecipe.name}</h2>
+      <h2 style={{ color: "#111" }}>
+  {activeRecipe.name}
+</h2>
 
-      <button
-  onClick={() => setPlannerRecipe(activeRecipe)}
-  style={{
-    marginTop: 10,
-    padding: "6px 10px",
-    borderRadius: 6,
-    background: "#8b5cf6",
-    color: "white",
-    border: "none",
-    cursor: "pointer"
-  }}
->
-  📅 Add to Planner
-</button>
+      {activeRecipe.image && (
+  <div style={{ textAlign: "center", marginTop: 10 }}>
+    <img
+      src={activeRecipe.image}
+      alt={activeRecipe.name}
+      style={{
+        width: "100%",
+        maxWidth: 350,
+        borderRadius: 12
+      }}
+    />
+  </div>
+)}
+
+      <div style={{ marginTop: 15 }}>
+  <strong>📅 Add to Planner:</strong>
+
+  <div
+    style={{
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 8
+    }}
+  >
+    {Object.keys(weeklyPlan).map((day) => {
+  const alreadyAdded = (weeklyPlan[day] || []).some(
+    (r) => r.name === activeRecipe.name
+  );
+
+  return (
+    <button
+      key={day}
+      onClick={() => {
+  assignToDay(day, activeRecipe);
+
+  setPlannerFeedback(day);
+
+  setTimeout(() => {
+    setPlannerFeedback("");
+  }, 2000);
+}}
+      style={{
+        padding: "6px 10px",
+        borderRadius: 6,
+        border: "none",
+        background:
+  plannerFeedback === day
+    ? "#22c55e"
+    : "#8b5cf6",
+        color: "white",
+        cursor: "pointer"
+      }}
+    >
+      {plannerFeedback === day ? `✔ ${day}` : day}
+    </button>
+  );
+})}
+  </div>
+</div>
+ 
 
       <button
         onClick={() => {
