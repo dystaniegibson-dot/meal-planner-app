@@ -58,7 +58,9 @@ const formatMeal = (meal) => {
     name: meal.strMeal || "Unknown",
     category: meal.strCategory || "",
     ingredients,
-    instructions: meal.strInstructions || "",
+    instructions: meal.strInstructions
+  ? meal.strInstructions.split("\n")
+  : [],
     image: meal.strMealThumb || ""
   };
 };
@@ -427,9 +429,9 @@ const scanInstructionImage = (file) => {
   );
 
     setNewRecipe((prev) => {
-      const existingSteps = prev.instructions
-        ? prev.instructions.split("\n")
-        : [];
+      const existingSteps = Array.isArray(prev.instructions)
+  ? prev.instructions
+  : prev.instructions?.split("\n") || [];
 
       const newSteps = lines.map(
         (line, i) => `Step ${existingSteps.length + i + 1}: ${line}`
@@ -437,7 +439,7 @@ const scanInstructionImage = (file) => {
 
       return {
         ...prev,
-        instructions: [...existingSteps, ...newSteps].join("\n")
+        instructions: [...existingSteps, ...newSteps]
       };
     });
   });
@@ -521,7 +523,7 @@ const saveRecipe = () => {
   const recipe = {
     name: newRecipe.name,
     image: newRecipe.image || "",
-    ingredients: newRecipe.ingredients.join("\n"),
+   ingredients: newRecipe.ingredients,
     instructions: newRecipe.instructions,
     category: newRecipe.category,
     favorite: false
@@ -576,20 +578,7 @@ const deleteRecipe = (index) => {
   setRecipes(updated);
   localStorage.setItem("recipes", JSON.stringify(updated));
 };
-<button
-  onClick={() => {
-    setNewRecipe({
-      ...r,
-      ingredients: r.ingredients.split("\n"),
-      instructions: r.instructions.split("\n")
-    });
 
-    setEditIndex(i);
-    setPage("new"); // go to edit screen
-  }}
->
-  ✏️ Edit
-</button>
   // ===== SEARCH =====
   
   // ===== PLANNER =====
@@ -778,7 +767,7 @@ return (
 <div style={{ marginTop: 10 }}>
   <h4>Ingredients</h4>
 
-  {newRecipe.ingredients.map((ing, i) => (
+  {(newRecipe.ingredients || []).map((ing, i) => (
     <div key={i} style={{ display: "flex", gap: 8, marginBottom: 5 }}>
       <input
       placeholder="Add ingredients here..."
@@ -934,12 +923,13 @@ return (
 <div style={{ marginTop: 10 }}>
   <h4>Instructions</h4>
 
-  {newRecipe.instructions.map((step, i) => (
+  {(newRecipe.instructions || []).map((step, i) => (
     <div key={i} style={{ display: "flex", gap: 8, marginBottom: 5 }}>
       
       <input
       ref={(el) => (instructionRefs.current[i] = el)}
         type="text"
+        
         value={`Step ${i + 1}: ${step}`}
         onKeyDown={(e) => {
           // ENTER → add new step
@@ -1406,8 +1396,13 @@ if (updatedDay.length === 0) {
   onClick={() => {
     setNewRecipe({
       ...activeRecipe,
-      ingredients: activeRecipe.ingredients.split("\n"),
-      instructions: activeRecipe.instructions.split("\n")
+      ingredients: Array.isArray(activeRecipe.ingredients)
+  ? activeRecipe.ingredients
+  : activeRecipe.ingredients?.split("\n") || [""],
+
+instructions: Array.isArray(activeRecipe.instructions)
+  ? activeRecipe.instructions
+  : activeRecipe.instructions?.split("\n") || [""]
     });
 
     const index = recipes.findIndex(
@@ -1557,11 +1552,13 @@ if (updatedDay.length === 0) {
 
       <div>
         <strong>Instructions:</strong>
-        {(activeRecipe.instructions || "")
-          .split("\n")
-          .map((step, i) => (
-            <div key={i}>{step}</div>
-          ))}
+        {(
+  Array.isArray(activeRecipe.instructions)
+    ? activeRecipe.instructions
+    : activeRecipe.instructions?.split("\n") || []
+).map((step, i) => (
+  <div key={i}>{step}</div>
+))} 
       </div>
     </div>
   </div>
