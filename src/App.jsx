@@ -1397,11 +1397,11 @@ if (updatedDay.length === 0) {
     setNewRecipe({
       ...activeRecipe,
       ingredients: Array.isArray(activeRecipe.ingredients)
-  ? activeRecipe.ingredients
+  ? [...activeRecipe.ingredients]
   : activeRecipe.ingredients?.split("\n") || [""],
 
 instructions: Array.isArray(activeRecipe.instructions)
-  ? activeRecipe.instructions
+  ? [...activeRecipe.instructions]
   : activeRecipe.instructions?.split("\n") || [""]
     });
 
