@@ -1394,24 +1394,58 @@ if (updatedDay.length === 0) {
 
 <button
   onClick={() => {
-    setNewRecipe({
-      ...activeRecipe,
-      ingredients: Array.isArray(activeRecipe.ingredients)
-  ? [...activeRecipe.ingredients]
-  : activeRecipe.ingredients?.split("\n") || [""],
+    const safeRecipe = {
+      name: activeRecipe.name || "",
+      image: activeRecipe.image || "",
+      category: activeRecipe.category || "",
+      favorite: activeRecipe.favorite || false,
 
-instructions: Array.isArray(activeRecipe.instructions)
-  ? [...activeRecipe.instructions]
-  : activeRecipe.instructions?.split("\n") || [""]
-    });
+      ingredients: Array.isArray(activeRecipe.ingredients)
+        ? [...activeRecipe.ingredients]
+        : typeof activeRecipe.ingredients === "string"
+        ? activeRecipe.ingredients
+            .split("\n")
+            .filter(Boolean)
+        : [""],
+
+      instructions: Array.isArray(activeRecipe.instructions)
+        ? [...activeRecipe.instructions]
+        : typeof activeRecipe.instructions === "string"
+        ? activeRecipe.instructions
+            .split("\n")
+            .filter(Boolean)
+        : [""],
+
+      imageIngredients:
+        activeRecipe.imageIngredients || [],
+
+      imageInstructions:
+        activeRecipe.imageInstructions || []
+    };
+
+    setNewRecipe(safeRecipe);
 
     const index = recipes.findIndex(
       (r) => r.name === activeRecipe.name
     );
 
     setEditIndex(index);
-    setActiveRecipe(null); // close popup
-    setPage("new"); // go to edit screen
+
+    setActiveRecipe(null);
+
+    setTimeout(() => {
+      setPage("new");
+    }, 0);
+  }}
+  style={{
+    marginTop: 10,
+    marginRight: 10,
+    padding: "6px 10px",
+    borderRadius: 6,
+    border: "none",
+    background: "#3b82f6",
+    color: "white",
+    cursor: "pointer"
   }}
 >
   ✏️ Edit
