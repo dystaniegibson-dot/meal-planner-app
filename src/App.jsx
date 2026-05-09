@@ -1,6 +1,6 @@
 import Tesseract from "tesseract.js";
 import { useState, useRef, useEffect } from "react";
-
+import fruitBg from "./assets/fruitbg3.jpg";
 
 export default function App() {
   const scanInputRef = useRef(null);
@@ -20,7 +20,8 @@ const [categoryFilter, setCategoryFilter] = useState("All");
   const [showImages, setShowImages] = useState({});
   const [ingredientPaste, setIngredientPaste] = useState("");
  const [instructionPaste, setInstructionPaste] = useState("");
-  const [page, setPage] = useState("new");
+  const [page, setPage] = useState("home");
+  const [manualGroceryItem, setManualGroceryItem] = useState("");
   const [groceryList, setGroceryList] = useState(() => {
   const saved = localStorage.getItem("groceryList");
   return saved ? JSON.parse(saved) : [];
@@ -32,13 +33,20 @@ const [checkedItems, setCheckedItems] = useState({});
     return saved ? JSON.parse(saved) : [];
 });
 
-const filtered = [...recipes].sort((a, b) => {
-  if (a.favorite === b.favorite) return 0;
-  return a.favorite ? -1 : 1;
-});
+const filtered = [...recipes]
+  .sort((a, b) => {
+    // favorites first
+    if (a.favorite !== b.favorite) {
+      return a.favorite ? -1 : 1;
+    }
+
+    // then alphabetical
+    return a.name.localeCompare(b.name);
+  });
 
 const [apiRecipes, setApiRecipes] = useState([]);
 const [search, setSearch] = useState("");
+const [recipeSearch, setRecipeSearch] = useState("");
 
 const formatMeal = (meal) => {
   const ingredients = [];
@@ -517,7 +525,14 @@ const clearRecipeForm = () => {
   setFullRecipePaste("");
 };
 
-  // ===== SAVE =====
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+};
+
+  
  // ===== SAVE =====
 const saveRecipe = () => {
   const recipe = {
@@ -620,24 +635,207 @@ const sampleRecipes = [
   }
 ];
 
+document.body.style.margin = "0";
+document.body.style.backgroundColor = "#fff8f3";
+document.body.style.backgroundImage = `url(${fruitBg})`;
+document.body.style.backgroundRepeat = "no-repeat";
+document.body.style.backgroundSize = "cover";
+document.body.style.backgroundPosition = "center";
+
 return (
   <div
     style={{
       color: "#222",
       padding: 20,
+      boxSizing: "border-box",
+      margin: 0,
       minHeight: "100vh",
-      background: "linear-gradient(to bottom, #fff7ed, #fde68a)"
-    }}
+      overflowX: "hidden",
+      background: "#fff8f3",
+      backgroundImage:
+      "url('https://www.transparenttextures.com/patterns/flowers.png')",
+      }}
   >
-    <h1>🍽 Recipe Scanner</h1>
+    <h1
+  style={{
+    color: "#7c4a45",
+    marginBottom: 24,
+    fontSize: 36
+  }}
+>
+  🍓 Cozy Recipe Book
+</h1>
 
     {/* NAV */}
-    <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-      <button onClick={() => setPage("discover")}>🔍Discover</button>
-      <button onClick={() => setPage("new")}>➕ New Recipe</button>
-      <button onClick={() => setPage("book")}>📖 Recipe Book</button>
-      <button onClick={() => setPage("planner")}>📅 Planner</button>
-      <button onClick={() => setPage("grocery")}>🛒 Grocery</button>
+    <div style={{
+  display: "flex",
+  flexDirection: "column",
+  gap: 18,
+  width: 230,
+  background: "#f4d9d4",
+  padding: 26,
+  borderRadius: 32,
+  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+  height: "calc(100vh - 40px)",
+  position: "fixed",
+  left: 20,
+  top: 20
+}}>
+  <div
+  style={{
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#7c4a45",
+    textAlign: "center"
+  }}
+>
+  🍓 My Recipes
+</div>
+<button
+  onClick={() => setPage("home")}
+  style={{
+    background:
+      page === "home"
+        ? "#e58b88"
+        : "#ffffff",
+    border: "none",
+    borderRadius: 14,
+    padding:
+      page === "home"
+        ? "14px 18px"
+        : "12px 16px",
+    textAlign: "left",
+    cursor: "pointer",
+    transition: "0.2s",
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2f2f2f",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+  }}
+>
+  🏠 Home
+</button>
+      <button
+  onClick={() => setPage("discover")}
+  style={{
+    background:
+  page === "discover"
+    ? "#e58b88"
+    : "#ffffff",
+    fontWeight: "bold",
+    color: "#2f2f2f",
+boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+    border: "none",
+    borderRadius: 14,
+   padding:
+  page === "discover"
+    ? "14px 18px"
+    : "12px 16px",
+    textAlign: "left",
+    cursor: "pointer",
+    transition: "0.2s",
+    fontSize: 16
+  }}
+>
+  🔍 Discover
+</button>
+      <button
+  onClick={() => setPage("new")}
+  style={{
+   background:
+  page === "new"
+    ? "#e58b88"
+    : "#ffffff",
+    border: "none",
+    borderRadius: 14,
+    padding:
+  page === "new"
+    ? "14px 18px"
+    : "12px 16px",
+    textAlign: "left",
+    cursor: "pointer",
+    transition: "0.2s",
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2f2f2f",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+  }}
+>
+  ➕ New Recipe
+</button>
+      <button
+  onClick={() => setPage("book")}
+  style={{
+    background:
+  page === "book"
+    ? "#e58b88"
+    : "#ffffff",
+    border: "none",
+    borderRadius: 14,
+    padding:
+  page === "book"
+    ? "14px 18px"
+    : "12px 16px",
+    textAlign: "left",
+    cursor: "pointer",
+    transition: "0.2s",
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2f2f2f",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+  }}
+>
+  📖 Recipe Book
+</button>
+      <button
+  onClick={() => setPage("planner")}
+  style={{
+   background:
+  page === "planner"
+    ? "#e58b88"
+    : "#ffffff",
+    border: "none",
+    borderRadius: 14,
+   padding:
+  page === "planner"
+    ? "14px 18px"
+    : "12px 16px",
+    textAlign: "left",
+    cursor: "pointer",
+    transition: "0.2s",
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2f2f2f",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+  }}
+>
+  📅 Planner
+</button>
+      <button
+  onClick={() => setPage("grocery")}
+  style={{
+   background:
+  page === "grocery"
+    ? "#e58b88"
+    : "#ffffff",
+    border: "none",
+    borderRadius: 14,
+   padding:
+  page === "grocery"
+    ? "14px 18px"
+    : "12px 16px",
+    textAlign: "left",
+    cursor: "pointer",
+    transition: "0.2s",
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2f2f2f",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+  }}
+>
+  🛒 Grocery
+</button>
     </div>
 
     {/* TOP INPUT */}
@@ -646,7 +844,318 @@ return (
     
 
     {/* PAGES WRAPPER */}
-    <div>
+    <div
+  style={{
+  marginLeft: 260,
+  padding: 40,
+  maxWidth: 1400,
+  margin: "0 auto",
+  marginTop: 20,
+  marginBottom: 20,
+  background: "rgba(255,255,255,0.94)",
+  borderRadius: 36,
+  boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+  minHeight: "100vh",
+  backdropFilter: "blur(8px)",
+  border: "1px solid rgba(255,255,255,0.5)"
+}}
+>
+
+{/* HOME */}
+{page === "home" && (
+  <div>
+    <h1
+      style={{
+        color: "#7c4a45",
+        fontSize: 42,
+        marginBottom: 10
+      }}
+    >
+      Welcome back! 🍓
+    </h1>
+
+    <p
+      style={{
+        fontSize: 18,
+        color: "#5b4b4b",
+        marginBottom: 30
+      }}
+    >
+      Here's what's cooking today.
+    </p>
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 20
+      }}
+    >
+      <div
+  style={{
+    background: "#fff8f6",
+    padding: 18,
+    borderRadius: 24,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+    display: "flex",
+    alignItems: "center",
+    gap: 18
+  }}
+>
+  <div
+    style={{
+      width: 64,
+      height: 64,
+      borderRadius: "50%",
+      background: "#ffe4ea",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 28
+    }}
+  >
+    ⭐
+  </div>
+
+  <div>
+    <h3
+      style={{
+        color: "#7c4a45",
+        margin: 0
+      }}
+    >
+      Favorites
+    </h3>
+
+    <h1
+      style={{
+        margin: 0,
+        color: "#2f2f2f"
+      }}
+    >
+      {
+        recipes.filter((r) => r.favorite)
+          .length
+      }
+    </h1>
+  </div>
+</div>
+
+      <div
+  style={{
+    background: "#fff8f6",
+    padding: 22,
+    borderRadius: 24,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+    display: "flex",
+    alignItems: "center",
+    gap: 18
+  }}
+>
+  <div
+    style={{
+      width: 64,
+      height: 64,
+      borderRadius: "50%",
+      background: "#e8ecff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 28
+    }}
+  >
+    📖
+  </div>
+
+  <div>
+    <h3
+      style={{
+        color: "#7c4a45",
+        margin: 0
+      }}
+    >
+      Recipes
+    </h3>
+
+    <h1
+      style={{
+        margin: 0,
+        color: "#2f2f2f"
+      }}
+    >
+      {recipes.length}
+    </h1>
+  </div>
+</div>
+
+      <div
+  style={{
+    background: "#fff8f6",
+    padding: 22,
+    borderRadius: 24,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+    display: "flex",
+    alignItems: "center",
+    gap: 18
+  }}
+>
+  <div
+    style={{
+      width: 64,
+      height: 64,
+      borderRadius: "50%",
+      background: "#fff0d9",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 28
+    }}
+  >
+    🛒
+  </div>
+
+  <div>
+    <h3
+      style={{
+        color: "#7c4a45",
+        margin: 0
+      }}
+    >
+      Grocery Items
+    </h3>
+
+    <h1
+      style={{
+        margin: 0,
+        color: "#2f2f2f"
+      }}
+    >
+      {groceryList.length}
+    </h1>
+  </div>
+</div>
+    </div>
+    <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "2fr 1fr",
+    gap: 24,
+    marginTop: 40
+  }}
+>
+    <div style={{ marginTop: 40 }}>
+  <h2
+    style={{
+      color: "#7c4a45",
+      marginBottom: 20
+    }}
+  >
+    🍓 Featured Recipes
+  </h2>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns:
+      "repeat(auto-fit, minmax(180px, 1fr))",
+      gap: 20
+    }}
+  >
+    {apiRecipes.slice(0, 4).map((r, i) => (
+      <div
+        key={i}
+        onClick={() => setActiveRecipe(r)}
+        style={{
+          background: "#fff8f6",
+          borderRadius: 24,
+          overflow: "hidden",
+          height: 320,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          cursor: "pointer",
+          boxShadow:
+            "0 4px 12px rgba(0,0,0,0.06)"
+        }}
+      >
+        {r.image && (
+          <img
+            src={r.image}
+            alt={r.name}
+            style={{
+              width: "100%",
+              height: 140,
+              objectFit: "cover"
+            }}
+          />
+        )}
+
+        <div style={{ padding: 16 }}>
+          <h3
+            style={{
+              color: "#7c4a45"
+            }}
+          >
+            {r.name}
+          </h3>
+
+          <p
+            style={{
+              color: "#777",
+              fontSize: 14
+            }}
+          >
+            {r.category || "Recipe"}
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+<div style={{ marginTop: 40 }}>
+  <h2
+    style={{
+      color: "#7c4a45",
+      marginBottom: 20
+    }}
+  >
+    📅 Planned Meals This Week
+  </h2>
+
+  <div
+    style={{
+      background: "#fff8f6",
+      borderRadius: 24,
+      padding: 20,
+      boxShadow: "0 4px 12px rgba(0,0,0,0.06)"
+    }}
+  >
+    {Object.keys(weeklyPlan).map((day) => (
+      <div
+        key={day}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "10px 0",
+          borderBottom:
+            "1px solid rgba(0,0,0,0.05)"
+        }}
+      >
+        <strong>{day}</strong>
+        <span>
+  {(weeklyPlan[day] || []).length > 0
+    ? weeklyPlan[day][0].name
+    : "No meal planned"}
+</span>
+      </div>
+    ))}
+    </div>
+</div>
+</div>
+</div>
+)}
+
+        
 
       {/* NEW RECIPE */}
       {page === "new" && (
@@ -666,8 +1175,11 @@ return (
     display: "block",
     marginBottom: 10,
     padding: "8px 12px",
-    borderRadius: 8,
-    cursor: "pointer"
+    borderRadius: 14,
+    cursor: "pointer",
+    background: "#e58b88",
+    color: "white",
+    border: "none"
   }}
 >
   ⚡ Auto Fill Recipe
@@ -679,6 +1191,12 @@ return (
             onChange={(e) =>
               setNewRecipe({ ...newRecipe, name: e.target.value })
             }
+            style={{
+            border: "1px solid #f3d6d0",
+            background: "#fffdfb",
+            padding: 10,
+            borderRadius: 12
+            }}
           />
 
           <input
@@ -733,7 +1251,7 @@ return (
   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
     {newRecipe.imageIngredients.map((img, i) => (
       <div key={i} style={{ position: "relative" }}>
-        <img src={img} style={{ width: 100, borderRadius: 8 }} />
+        <img src={img} style={{ width: 100, borderRadius: 14 }} />
 
         <button
           onClick={() => {
@@ -813,7 +1331,7 @@ return (
           updated[i] = e.target.value;
           setNewRecipe({ ...newRecipe, ingredients: updated });
         }}
-        style={{ flex: 1, padding: 6, borderRadius: 6 }}
+        style={{ flex: 1, padding: 6, borderRadius: 14 }}
       />
 
       {ing && (
@@ -852,7 +1370,7 @@ return (
     style={{
       marginTop: 5,
       padding: "6px 10px",
-      borderRadius: 6,
+      borderRadius: 14,
       cursor: "pointer"
     }}
   >
@@ -890,7 +1408,7 @@ return (
   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
     {newRecipe.imageInstructions.map((img, i) => (
       <div key={i} style={{ position: "relative" }}>
-        <img src={img} style={{ width: 100, borderRadius: 8 }} />
+        <img src={img} style={{ width: 100, borderRadius: 14 }} />
 
         <button
           onClick={() => {
@@ -971,7 +1489,7 @@ return (
 
   setNewRecipe({ ...newRecipe, instructions: updated });
 }}
-        style={{ flex: 1, padding: 6, borderRadius: 6 }}
+        style={{ flex: 1, padding: 6, borderRadius: 14 }}
       />
 
       {step && (
@@ -1011,15 +1529,69 @@ return (
       {/* RECIPE BOOK */}
       {page === "book" && (
         <div>
-          <h2>📖 Recipe Book</h2>
+          <h2
+  style={{
+    color: "#7c4a45",
+    marginBottom: 20,
+    fontSize: 30
+  }}
+>
+  📖 Recipe Book
+</h2>
 
-          {filtered.map((r, i) => (
-            <div key={i} style={{ background: "white", padding: 15 }}>
-              <h3>
+          <input
+  type="text"
+  placeholder="Search recipes..."
+  value={recipeSearch}
+  onChange={(e) =>
+    setRecipeSearch(e.target.value)
+  }
+  style={{
+    width: "100%",
+    background: "#fff8f6",
+    border: "1px solid #f3d6d0",
+    padding: 12,
+    marginBottom: 15,
+    borderRadius: 14,
+    fontSize: 15,
+    outline: "none",
+    color: "#2f2f2f",
+    caretColor: "#7c4a45"
+  }}
+/>
+ <div>
+          {filtered
+  .filter((r) =>
+    r.name
+      .toLowerCase()
+      .includes(recipeSearch.toLowerCase())
+  )
+ 
+ 
+  .map((r, i) => (
+            <div key={i} style={{ background: "#fff8f6",
+padding: 18,
+transition: "0.2s",
+marginBottom: 18,
+borderRadius: 24,
+boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+border: "1px solid rgba(255,255,255,0.6)" }}>
+              <h3
+  style={{
+    color: "#7c4a45",
+    fontSize: 22,
+    marginBottom: 10,
+    display: "flex",
+alignItems: "center",
+gap: 10
+  }}
+>
                 
                 <span
-  onClick={() => setActiveRecipe(r)}
-  style={{ cursor: "pointer" }}
+                onClick={() => {
+                setActiveRecipe(r);
+                  }}
+                   style={{ cursor: "pointer" }}
 >
   ▶
 </span>
@@ -1034,6 +1606,7 @@ return (
                     setRecipes(updated);
                     localStorage.setItem("recipes", JSON.stringify(updated));
                   }}
+                  style={{ cursor: "pointer" }}
                 >
                   {r.favorite ? "⭐" : "☆"}
                 </span>
@@ -1046,13 +1619,42 @@ return (
               
             </div>
           ))}
+</div>
+          <button
+  onClick={scrollToTop}
+  style={{
+    position: "fixed",
+    bottom: 20,
+    right: 20,
+    borderRadius: "50%",
+    width: 45,
+    height: 45,
+    border: "none",
+    background: "#e58b88",
+    color: "white",
+    fontSize: 20,
+    cursor: "pointer",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+  }}
+>
+  ↑
+</button>
+
         </div>
       )}
 
      {/* PLANNER */}
 {page === "planner" && (
   <div>
-  <h2>📅 Planner</h2>
+  <h2
+  style={{
+    color: "#7c4a45",
+    marginBottom: 20,
+    fontSize: 30
+  }}
+>
+  📅 Planner
+</h2>
 
   <div
     style={{
@@ -1067,12 +1669,13 @@ return (
   key={day}
   onClick={() => setOpenDay(day)}
   style={{
-    background: "#fffdf5",
-    borderRadius: 12,
+    background: "#fffdfb",
+    borderRadius: 20,
     padding: 15,
     minHeight: 120,
     cursor: "pointer",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    border: "1px solid rgba(255,255,255,0.6)"
   }}
 >
   <h3>{day}</h3>
@@ -1151,7 +1754,7 @@ return (
     padding: 10,
     marginBottom: 8,
     background: "#fef3c7",
-    borderRadius: 8
+    borderRadius: 14
   }}
 >
   <span
@@ -1210,7 +1813,88 @@ if (updatedDay.length === 0) {
       {/* GROCERY */}
       {page === "grocery" && (
         <div>
-          <h2>🛒 Grocery</h2>
+          <h2
+  style={{
+    color: "#7c4a45",
+    marginBottom: 20,
+    fontSize: 30
+  }}
+>
+  🛒 Grocery
+</h2>
+
+          <div
+  style={{
+    display: "flex",
+    gap: 10,
+    marginBottom: 20
+  }}
+>
+  <input
+    type="text"
+    placeholder="Add grocery item..."
+    value={manualGroceryItem}
+    onChange={(e) =>
+      setManualGroceryItem(e.target.value)
+    }
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+
+        if (!manualGroceryItem.trim()) return;
+
+        const updated = [
+          ...groceryList,
+          manualGroceryItem.trim()
+        ];
+
+        setGroceryList(updated);
+
+        localStorage.setItem(
+          "groceryList",
+          JSON.stringify(updated)
+        );
+
+        setManualGroceryItem("");
+      }
+    }}
+    style={{
+      flex: 1,
+      padding: 8,
+      borderRadius: 14
+    }}
+  />
+
+  <button
+    onClick={() => {
+      if (!manualGroceryItem.trim()) return;
+
+      const updated = [
+        ...groceryList,
+        manualGroceryItem.trim()
+      ];
+
+      setGroceryList(updated);
+
+      localStorage.setItem(
+        "groceryList",
+        JSON.stringify(updated)
+      );
+
+      setManualGroceryItem("");
+    }}
+    style={{
+      padding: "8px 12px",
+      borderRadius: 14,
+      border: "none",
+      background: "#22c55e",
+      color: "white",
+      cursor: "pointer"
+    }}
+  >
+    ➕ Add
+  </button>
+</div>
 
           {groceryList.map((item, i) => (
   <div
@@ -1265,93 +1949,157 @@ if (updatedDay.length === 0) {
         </div>
       )}
 
-      {/* DISCOVER */}
-      {page === "discover" && (
-        <div>
-          <h2>🔍 Discover</h2>
+     {/* DISCOVER */}
+{page === "discover" && (
+  <div>
+    <h2
+      style={{
+        color: "#7c4a45",
+        marginBottom: 20,
+        fontSize: 30
+      }}
+    >
+      🔍 Discover
+    </h2>
 
-<input
-  type="text"
-  placeholder="Search recipes..."
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  style={{
-    width: "100%",
-    padding: 8,
-    marginBottom: 10,
-    borderRadius: 8
-  }}
-/>
+    <input
+      type="text"
+      placeholder="Search recipes..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      style={{
+        width: "100%",
+        background: "#fff8f6",
+        border: "1px solid #f3d6d0",
+        padding: 12,
+        marginBottom: 15,
+        borderRadius: 14,
+        fontSize: 15,
+        outline: "none",
+        color: "#2f2f2f",
+        caretColor: "#7c4a45"
+      }}
+    />
 
-          {(apiRecipes || []).map((r, i) => {
-  if (!r) return null;
+    {(apiRecipes || []).map((r, i) => {
+      if (!r) return null;
 
-  return (
-    <div key={i}>
-      <h3
-        onClick={() => setActiveRecipe(r)}
-        style={{ cursor: "pointer" }}
-      >
-        {r.name || "No Name"}
-      </h3>
+      return (
+        <div
+          key={i}
+          onClick={() => setActiveRecipe(r)}
+          style={{
+            cursor: "pointer",
+            transition: "0.2s",
+            background: "#fff8f6",
+            padding: 18,
+            marginBottom: 18,
+            borderRadius: 24,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+            border: "1px solid rgba(255,255,255,0.6)"
+          }}
+        >
+          <h3
+            style={{
+              cursor: "pointer",
+              color: "#7c4a45",
+              fontSize: 24,
+              marginBottom: 12
+            }}
+          >
+            {r.name || "No Name"}
+          </h3>
 
-      {r.image && (
-        <img
-          src={r.image}
-          alt={r.name}
-          style={{ width: 200 }}
-        />
-      )}
-    </div>
-  );
-})}
-
-<button
-  onClick={() => setPageCount((prev) => prev + 1)}
-  style={{
-    marginTop: 20,
-    padding: "10px 15px",
-    borderRadius: 8,
-    cursor: "pointer"
-  }}
->
-  🔄 Load More
-</button>
-
+          {r.image && (
+            <img
+              src={r.image}
+              alt={r.name}
+              style={{
+                width: "100%",
+                maxWidth: 350,
+                borderRadius: 20,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                objectFit: "cover",
+                marginTop: 10
+              }}
+            />
+          )}
         </div>
-      )}
+      );
+    })}
 
+    <button
+      onClick={() => setPageCount((prev) => prev + 1)}
+      style={{
+        marginTop: 20,
+        padding: "10px 15px",
+        borderRadius: 14,
+        cursor: "pointer"
+      }}
+    >
+      🔄 Load More
+    </button>
+
+    <button
+      onClick={scrollToTop}
+      style={{
+        position: "fixed",
+        bottom: 20,
+        right: 20,
+        borderRadius: "50%",
+        width: 45,
+        height: 45,
+        border: "none",
+        background: "#e58b88",
+        color: "white",
+        fontSize: 20,
+        cursor: "pointer",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+      }}
+    >
+      ↑
+    </button>
+  </div>
+)}
+
+</div>
 {activeRecipe && (
-  <div
-    onClick={() => setActiveRecipe(null)}
+ <div
+   onClick={() => {
+  setActiveRecipe(null);
+}}
     style={{
       position: "fixed",
       top: 0,
       left: 0,
       width: "100%",
       height: "100%",
-      background: "rgba(0,0,0,0.7)",
+      background: "rgba(60,40,40,0.45)",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      zIndex: 2000
+     zIndex: 9999
     }}
   >
     <div
       onClick={(e) => e.stopPropagation()}
       style={{
         position: "relative",
-        background: "#fffdf5",
-        padding: 20,
-        borderRadius: 10,
+        background: "#fff8f6",
+  padding: 28,
+  borderRadius: 28,
+  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+  border: "1px solid rgba(255,255,255,0.6)",
         width: "90%",
         maxWidth: 600,
-        maxHeight: "90%",
+       maxHeight: "85vh",
         overflowY: "auto"
       }}
     >
       <button
-  onClick={() => setActiveRecipe(null)}
+  onClick={() => {
+  setActiveRecipe(null);
+}}
   style={{
     position: "absolute",
     top: 10,
@@ -1377,12 +2125,13 @@ if (updatedDay.length === 0) {
     setRecipes(updated);
     localStorage.setItem("recipes", JSON.stringify(updated));
 
-    setActiveRecipe(null);
+    
+setActiveRecipe(null);
   }}
   style={{
     marginTop: 10,
     padding: "6px 10px",
-    borderRadius: 6,
+    borderRadius: 14,
     background: "#ef4444",
     color: "white",
     border: "none",
@@ -1431,7 +2180,8 @@ if (updatedDay.length === 0) {
 
     setEditIndex(index);
 
-    setActiveRecipe(null);
+    
+setActiveRecipe(null);
 
     setTimeout(() => {
       setPage("new");
@@ -1441,9 +2191,9 @@ if (updatedDay.length === 0) {
     marginTop: 10,
     marginRight: 10,
     padding: "6px 10px",
-    borderRadius: 6,
+    borderRadius: 14,
     border: "none",
-    background: "#3b82f6",
+    background: "#e58b88",
     color: "white",
     cursor: "pointer"
   }}
@@ -1463,7 +2213,9 @@ if (updatedDay.length === 0) {
       style={{
         width: "100%",
         maxWidth: 350,
-        borderRadius: 12
+        borderRadius: 20,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        objectFit: "cover",
       }}
     />
   </div>
@@ -1480,7 +2232,7 @@ if (updatedDay.length === 0) {
       marginTop: 8
     }}
   >
-    {Object.keys(weeklyPlan).map((day) => {
+    {Object.keys(weeklyPlan || {}).map((day) => {
   const alreadyAdded = (weeklyPlan[day] || []).some(
     (r) => r.name === activeRecipe.name
   );
@@ -1493,13 +2245,15 @@ if (updatedDay.length === 0) {
 
   setPlannerFeedback(day);
 
-  setTimeout(() => {
-    setPlannerFeedback("");
-  }, 2000);
+  window.clearTimeout(window.plannerTimeout);
+
+window.plannerTimeout = setTimeout(() => {
+  setPlannerFeedback("");
+}, 2000);
 }}
       style={{
         padding: "6px 10px",
-        borderRadius: 6,
+        borderRadius: 14,
         border: "none",
         background:
   plannerFeedback === day
@@ -1551,8 +2305,8 @@ if (updatedDay.length === 0) {
   style={{
     marginBottom: 10,
     padding: "6px 10px",
-    borderRadius: 6,
-    background: "#3b82f6",
+    borderRadius: 14,
+   background: "#e58b88",
     color: "white",
     border: "none",
     cursor: "pointer"
@@ -1563,11 +2317,19 @@ if (updatedDay.length === 0) {
 
       <div>
         <strong>Ingredients:</strong>
-        {(Array.isArray(activeRecipe.ingredients)
-  ? activeRecipe.ingredients
-  : activeRecipe.ingredients?.split("\n") || []
+        {(
+  Array.isArray(activeRecipe.ingredients)
+    ? activeRecipe.ingredients
+    : []
 ).map((item, i) => (
-  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+  <div
+    key={i}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }}
+  >
     <input
       type="checkbox"
       checked={selectedItems[item] || false}
@@ -1593,12 +2355,13 @@ if (updatedDay.length === 0) {
 ).map((step, i) => (
   <div key={i}>{step}</div>
 ))} 
-      </div>
-    </div>
-  </div>
+        </div>
+</div>
+</div>
+
 )}
 
     </div>
-  </div>
+  
 );
 }
