@@ -6,6 +6,8 @@ export default function App() {
   const scanInputRef = useRef(null);
   const inputRefs = useRef([]);
   // ===== STATE ===== //
+  const [plannerSearch, setPlannerSearch] =
+  useState("");
   const [plannerFeedback, setPlannerFeedback] = useState("");
   const [openDay, setOpenDay] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
@@ -1193,9 +1195,11 @@ boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
             }
             style={{
             border: "1px solid #f3d6d0",
-            background: "#fffdfb",
+            background: "#3a3a3d",
             padding: 10,
-            borderRadius: 12
+            borderRadius: 12,
+            color: "#ffffff",
+            caretColor: "#ffffff"
             }}
           />
 
@@ -1743,6 +1747,63 @@ gap: 10
 </button>
 
       <h2>{openDay}</h2>
+
+<input
+  type="text"
+  placeholder="Search recipes..."
+  value={plannerSearch}
+  onChange={(e) =>
+    setPlannerSearch(e.target.value)
+  }
+  style={{
+    width: "100%",
+    padding: 10,
+    borderRadius: 12,
+    border: "1px solid #ddd",
+    marginBottom: 15,
+    marginTop: 10,
+    background: "#3a3a3d",
+    color: "white"
+  }}
+/>
+
+<div
+  style={{
+    maxHeight: 200,
+    overflowY: "auto",
+    marginBottom: 15
+  }}
+>
+  {recipes
+    .filter((r) =>
+      r.name
+        .toLowerCase()
+        .includes(
+          plannerSearch.toLowerCase()
+        )
+    )
+    .slice(0, 6)
+    .map((r, i) => (
+      <div
+        key={i}
+        onClick={() => {
+          assignToDay(openDay, r);
+          setPlannerSearch("");
+        }}
+        style={{
+          padding: 10,
+          marginBottom: 8,
+          borderRadius: 12,
+          cursor: "pointer",
+          background: "#fff8f6",
+          border:
+            "1px solid rgba(0,0,0,0.08)"
+        }}
+      >
+        {r.name}
+      </div>
+    ))}
+</div>
 
       {(weeklyPlan[openDay] || []).map((r, i) => (
        <div
