@@ -37,6 +37,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [groceryAdded, setGroceryAdded] = useState(false);
   const [recipeAdded, setRecipeAdded] = useState(false);
   const [plannerSearch, setPlannerSearch] = useState("");
@@ -89,11 +90,9 @@ export default function App() {
   });
   const [selectedItems, setSelectedItems] = useState({});
   const [checkedItems, setCheckedItems] = useState({});
-  // Load saved recipes from the browser when the app starts.
-  const [recipes, setRecipes] = useState(() => {
-    const saved = localStorage.getItem("recipes");
-    return saved ? JSON.parse(saved) : [];
-  });
+
+  // loads recipes from supabase sql
+  const [recipes, setRecipes] = useState([]);
 
   // Make a sorted copy of the recipes so the original array is not changed.
   const filtered = [...recipes].sort((a, b) => {
@@ -452,45 +451,48 @@ export default function App() {
   };
 
   // ============================== Save Recipe ==============================
-  // ===== SAVE =====
-  // Build a recipe object and save it to React state and localStorage.
-  const saveRecipe = () => {
-    const recipe = {
-      name: newRecipe.name,
-      image: newRecipe.image || "",
-      ingredients: newRecipe.ingredients,
-      instructions: newRecipe.instructions,
-      category: newRecipe.category,
-      favorite: false,
-    };
+  // ===== SAVE RECIPES TO SUPABASE SQL FILE=====
+  const saveRecipe = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const exists = recipes.some((rec) => rec.name === recipe.name);
-
-    if (!exists) {
-      const updated = [...recipes, recipe];
-      setRecipes(updated);
-      localStorage.setItem("recipes", JSON.stringify(updated));
-      setRecipeAdded(true);
-
-      setTimeout(() => {
-        setRecipeAdded(false);
-      }, 2000);
+    if (!user) {
+      alert("Please sign in before saving a recipe.");
+      return;
     }
 
-    setNewRecipe({
-      name: "",
-      image: "",
-      ingredients: [""],
-      instructions: [""],
-      imageIngredients: [],
-      imageInstructions: [],
-      favorite: false,
-      category: "",
-    });
+    const recipeToSave = {
+      user_id: user.id,
+      name: newRecipe.name,
+      ingredients: JSON.stringify(newRecipe.ingredients || []),
+      instructions: JSON.stringify(newRecipe.instructions || []),
+      category: newRecipe.category || "",
+      favorite: newRecipe.favorite || false,
+      image: newRecipe.image || "",
+    };
 
-    setIngredientPaste("");
-    setInstructionPaste("");
-    setFullRecipePaste("");
+    const { data, error } = await supabase.from("recipes").insert([recipeToSave]).select().single();
+
+    if (error) {
+      console.error("Error saving recipe:", error);
+      alert("There was a problem saving your recipe.");
+      return;
+    }
+
+    const savedRecipe = {
+      ...newRecipe,
+      id: data.id,
+      user_id: data.user_id,
+    };
+
+    setRecipes((prev) => [...prev, savedRecipe]);
+
+    setRecipeAdded(true);
+
+    setTimeout(() => {
+      setRecipeAdded(false);
+    }, 2000);
   };
 
   // ============================== Grocery ==============================

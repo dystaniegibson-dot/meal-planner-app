@@ -1,6 +1,8 @@
+import { useState } from "react";
 // ============================== Sign In ==============================
 
 export default function SignIn({ email, setEmail, password, setPassword, signIn, signUp, resetPassword }) {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <main className="signin-page">
       {/* ============================== Sign In Card ============================== */}
@@ -46,12 +48,21 @@ export default function SignIn({ email, setEmail, password, setPassword, signIn,
 
           <input
             id="signin-password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                signIn();
+              }
+            }}
             autoComplete="current-password"
           />
+          <label className="show-password-option">
+            <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
+            Show password
+          </label>
         </div>
 
         {/* ============================== Sign In ============================== */}
