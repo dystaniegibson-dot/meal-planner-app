@@ -1,184 +1,3281 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
-
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+/* ====================================
+   GLOBAL
+==================================== */
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #fff8f3;
+  color: #2f2f2f;
 }
 
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
+* {
+  box-sizing: border-box;
 }
 
-#center {
+/* =========================================================
+   GLOBAL APP STYLES
+   Moved from App.jsx — visual values intentionally preserved.
+   ========================================================= */
+
+/* ========================================
+   APP SHELL
+======================================== */
+
+.app-shell {
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
+  align-items: stretch;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+  color: #222;
+
+  /* Let the fruity background show through */
+  background: transparent;
+
+  overflow-x: hidden;
 }
 
-#next-steps {
+/* Popup overlay */
+.app-popup-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(60, 40, 40, 0.35);
+  z-index: 850;
+}
+
+/* Header */
+.app-header {
+  display: block;
+}
+
+.app-title {
+  color: var(--theme-accent);
+  margin-bottom: 24px;
+  font-size: 36px;
+}
+
+/* Main area containing sidebar + page */
+.app-layout {
   display: flex;
-  border-top: 1px solid var(--border);
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-start;
+
+  width: 100%;
+  min-width: 0;
+  min-height: calc(100vh - 80px);
+
+  margin: 0;
+  padding: 0;
+
+  box-sizing: border-box;
+}
+
+/* ========================================
+   SIDEBAR
+======================================== */
+
+.sidebar {
+  flex: 0 0 230px;
+  width: 230px;
+  min-width: 230px;
+
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  background: var(--theme-sidebar);
+
+  padding: 26px;
+
+  border-radius: 0 32px 32px 0;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  position: sticky;
+  left: 0;
+  top: 0;
+
+  align-self: flex-start;
+
+  box-sizing: border-box;
+
+  transition:
+    width 0.3s ease,
+    min-width 0.3s ease,
+    flex-basis 0.3s ease,
+    padding 0.3s ease;
+
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* ========================================
+   SIDEBAR OPEN
+======================================== */
+
+.sidebar-open {
+  flex-basis: 230px;
+  width: 230px;
+  min-width: 230px;
+}
+
+/* ========================================
+   SIDEBAR COLLAPSED
+======================================== */
+
+.sidebar-collapsed {
+  flex-basis: 70px;
+  width: 70px;
+  min-width: 70px;
+
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* ========================================
+   SIDEBAR BRAND
+======================================== */
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  background: transparent;
+  border: none;
+
+  cursor: pointer;
+
+  font-size: 24px;
+
+  padding: 0;
+  margin: 0;
+
+  white-space: nowrap;
+}
+
+/* Brand when collapsed */
+
+.sidebar-collapsed .sidebar-brand {
+  justify-content: center;
+}
+
+/* ========================================
+   SIDEBAR BUTTONS
+======================================== */
+
+.sidebar-button {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  border: none;
+  border-radius: 14px;
+
   text-align: left;
 
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
+  cursor: pointer;
 
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
+  transition: 0.2s;
 
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+  font-size: 16px;
+  font-weight: bold;
+
+  color: #2f2f2f;
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-#docs {
-  border-right: 1px solid var(--border);
+/* ========================================
+   SIDEBAR ICONS
+======================================== */
 
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+.sidebar-icon {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 22px;
+
+  font-size: 18px;
 }
 
-#next-steps ul {
-  list-style: none;
+/* ========================================
+   SIDEBAR LABELS
+======================================== */
+
+.sidebar-label {
+  white-space: nowrap;
+}
+
+/* ========================================
+   COLLAPSED SIDEBAR CONTENT
+======================================== */
+
+/* Hide words */
+
+.sidebar-collapsed .sidebar-label {
+  display: none;
+}
+
+/* Center the remaining icons */
+
+.sidebar-collapsed .sidebar-button {
+  justify-content: center;
+
+  gap: 0;
+
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+/* Make icons slightly larger */
+
+.sidebar-collapsed .sidebar-icon {
+  width: auto;
+  font-size: 20px;
+}
+
+/* ========================================
+   COLLAPSED BRAND
+======================================== */
+
+.sidebar-brand-text {
+  white-space: nowrap;
+}
+
+.sidebar-brand-icon {
+  margin-left: 4px;
+}
+
+.sidebar-collapsed .sidebar-brand-text {
+  display: none;
+}
+
+.sidebar-collapsed .sidebar-brand-icon {
+  margin-left: 0;
+  font-size: 24px;
+}
+
+/* ========================================
+   SIGN OUT
+======================================== */
+
+.sidebar-signout-icon {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+/* ========================================
+   PAGE WRAPPER
+======================================== */
+
+.page-wrapper {
+  flex: 1;
+  min-width: 0;
+
+  width: auto;
+  max-width: none;
+
+  padding: 25px 30px 25px;
+
+  /* IMPORTANT:
+     Do NOT use margin: 0 auto here.
+     The sidebar and page are now real columns. */
+  margin: 20px 30px 20px 30px; /*      top   right   bottom   left
+                                        20px   20px    20px    20px    */
+
+  box-sizing: border-box;
+
+  background: transparent;
+
+  border-radius: 36px;
+
+  box-shadow: none;
+
+  min-height: calc(100vh - 40px);
+
+  backdrop-filter: none;
+
+  border: none;
+}
+
+/* Recipe modal */
+.recipe-modal-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(60, 40, 40, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 900;
+}
+
+.recipe-modal {
+  position: relative;
+  background: #fff8f6;
+  padding: 28px;
+  border-radius: 28px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.recipe-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.recipe-action {
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+}
+
+.recipe-action-delete {
+  margin-top: 10px;
+  background: #ef4444;
+  color: white;
+}
+
+.recipe-action-edit {
+  margin-top: 10px;
+  margin-right: 10px;
+  background: var(--theme-accent);
+  color: white;
+}
+
+.recipe-action-save {
+  margin-top: 10px;
+  background: var(--theme-accent);
+  color: white;
+}
+
+.recipe-action-grocery {
+  margin-bottom: 10px;
+  background: var(--theme-accent);
+  color: white;
+}
+
+.recipe-modal-title {
+  color: #111;
+}
+
+.recipe-modal-image {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.recipe-modal-image img {
+  width: 100%;
+  max-width: 350px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  object-fit: cover;
+}
+
+.recipe-planner-section {
+  margin-top: 15px;
+}
+
+.planner-day-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.recipe-ingredients > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* .recipe-instructions { */
+/* Reserved for future App-level instruction styling. */
+/*} */
+
+/* ========================================
+   RECIPE BOOK - PAGE WRAPPER
+   Removes the global white page container
+   only while viewing the Recipe Book.
+======================================== */
+
+.recipe-book-wrapper {
+  background: transparent !important;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* ====================================
+   HOME
+==================================== */
+
+/* ============================== Page Heading ============================== */
+
+.page-title {
+  color: var(--theme-accent);
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+
+.page-subtitle {
+  color: #5b4b4b;
+  font-size: 18px;
+  margin-bottom: 30px;
+}
+
+/* ============================== Recipe Stats ============================== */
+
+.stats-grid {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 20px auto;
+}
+
+.stat-card {
+  width: 72px;
+  height: 34px;
+  padding: 0 8px;
+  background: #fff8f6;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.stat-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.stat-number {
+  margin: 0;
   padding: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  color: #2f2f2f;
+}
+
+/* ============================== Home Content ============================== */
+
+.home-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-top: 40px;
+}
+
+/* ============================== Featured Recipes ============================== */
+
+.featured-section {
+  margin-top: 40px;
+}
+
+.section-title {
+  color: var(--theme-accent);
+  margin-bottom: 20px;
+}
+
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.recipe-card {
+  background: #fff8f6;
+  border-radius: 24px;
+  overflow: hidden;
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.recipe-image {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+
+.recipe-content {
+  padding: 16px;
+}
+
+.recipe-title {
+  color: var(--theme-accent);
+}
+
+.recipe-category {
+  color: #777;
+  font-size: 14px;
+}
+
+/* ============================== Planned Meals ============================== */
+
+.planned-meals-section {
+  margin-top: 40px;
+}
+
+.planned-meals-card {
+  background: #fff8f6;
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.planned-meal-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.planned-meal-name {
+  cursor: default;
+}
+
+/* ============================== Existing Home Styles ============================== */
+
+/*
+  These classes are kept because they are already part of the Home stylesheet.
+  We are not removing them during this pass because we have not yet verified
+  whether another part of the app uses them.
+*/
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* ====================================
+   DISCOVER
+==================================== */
+
+/* ============================== Discover Heading ============================== */
+
+.discover-title {
+  color: var(--theme-accent);
+  margin-bottom: 20px;
+  font-size: 30px;
+}
+
+/* ============================== Recipe Search ============================== */
+
+.discover-search {
+  width: 100%;
+  background: #fff8f6;
+  border: 1px solid var(--theme-hover);
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 14px;
+  font-size: 15px;
+  outline: none;
+  color: #2f2f2f;
+  caret-color: var(--theme-accent);
+  box-sizing: border-box;
+}
+
+/* ============================== Discover Grid ============================== */
+
+.discover-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+/* ============================== Discover Recipe Card ============================== */
+
+.discover-recipe-card {
+  cursor: pointer;
+  transition: 0.2s;
+  background: #fff8f6;
+  padding: 18px;
+  margin-bottom: 18px;
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.discover-recipe-title {
+  cursor: pointer;
+  color: var(--theme-accent);
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.discover-recipe-image {
+  width: 100%;
+  max-width: 350px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  object-fit: cover;
+  margin-top: 10px;
+}
+
+/* ============================== Load More ============================== */
+
+.discover-load-more {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.discover-load-more-button {
+  background: var(--theme-accent);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* ============================== Scroll To Top ============================== */
+
+.discover-scroll-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  border: none;
+  background: var(--theme-accent);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ====================================
+   NEW RECIPE
+==================================== */
+
+/* ============================== Recipe Page Inputs ============================== */
+
+.new-recipe-page input,
+.new-recipe-page textarea {
+  background: #fff8f6;
+  border: 2px solid var(--theme-hover);
+  border-radius: 14px;
+  color: #2f2f2f;
+  font-size: 16px;
+  padding: 12px 16px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.new-recipe-page input:focus,
+.new-recipe-page textarea:focus {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px rgba(229, 139, 136, 0.15);
+}
+
+.new-recipe-page input::placeholder,
+.new-recipe-page textarea::placeholder {
+  color: #a88984;
+}
+
+/* ============================== Recipe Text Box ============================== */
+
+.new-recipe-page textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.recipe-paste-box {
+  margin-bottom: 10px;
+}
+
+/* ============================== Recipe Notice ============================== */
+
+.recipe-entry-notice {
+  background: #fffdf5;
+  padding: 20px;
+}
+
+.recipe-entry-notice-text {
+  background: var(--theme-sidebar);
+  border: 1px solid var(--theme-hover);
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 18px;
+  color: var(--theme-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ============================== Recipe Photo ============================== */
+
+.recipe-photo-section {
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+.recipe-photo-label {
+  display: block;
+  color: var(--theme-accent);
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.recipe-photo-description {
+  margin: 0 0 8px;
+  color: #6b4b45;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.recipe-image-preview {
+  width: 200px;
+}
+
+/* ============================== Auto Fill ============================== */
+
+.auto-fill-button {
+  display: block;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  background: var(--theme-accent);
+  color: white;
+  border: none;
+}
+
+/* ============================== Recipe Name ============================== */
+
+.recipe-name-input {
+  border: 2px solid var(--theme-hover) !important;
+  background: #fff8f6 !important;
+  color: #2f2f2f !important;
+  caret-color: var(--theme-accent);
+}
+
+/* ============================== Ingredients & Instructions ============================== */
+
+.ingredients-section,
+.instructions-section {
+  margin-top: 10px;
+}
+
+.recipe-input-row {
   display: flex;
   gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+  margin-bottom: 5px;
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
+.recipe-input-row input {
+  flex: 1;
+  padding: 6px;
+  border-radius: 14px;
 }
 
-.ticks {
+.instructions-section .recipe-input-row input {
+  padding: 12px;
+}
+
+/* ============================== Remove Item Buttons ============================== */
+
+.remove-recipe-item-button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+/* ============================== Recipe Actions ============================== */
+
+.recipe-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.save-recipe-button {
+  padding: 14px 28px;
+  border-radius: 14px;
+  border: none;
+  background: var(--theme-accent);
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 17px;
+  box-shadow: 0 3px 8px rgba(100, 70, 45, 0.12);
+}
+
+.clear-recipe-button {
+  padding: 12px 20px;
+  border-radius: 14px;
+  border: 1px solid #d9aaa0;
+  background: #fff8f6;
+  color: var(--theme-accent);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+/* ============================== Existing Text Input Rule ============================== */
+
+.new-recipe-page input[type="text"] {
+  background: #fff8f6 !important;
+  color: #2f2f2f !important;
+  border: 2px solid var(--theme-hover) !important;
+}
+/* ========================================
+   RECIPE BOOK - SCRAPBOOK
+======================================== */
+
+/* ============================== Recipe Book Page ============================== */
+
+.recipe-book-page {
   position: relative;
+
   width: 100%;
+  max-width: 1200px;
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
+  margin: 0 auto;
+  padding: 3px 20px 60px;
+
+  box-sizing: border-box;
+
+  background: transparent;
+}
+
+/* ============================== Recipe Book Title ============================== */
+
+.recipe-book-title {
+  text-align: center;
+
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 38px;
+  color: #261917;
+
+  margin: 0 0 18px;
+}
+
+/* ============================== Recipe Search ============================== */
+
+.recipe-book-search {
+  display: block;
+
+  width: 330px;
+  margin: 0 auto -7px;
+
+  box-sizing: border-box;
+
+  background: #fffaf5;
+
+  border: 2px solid #efd0c7;
+  border-radius: 25px;
+
+  padding: 12px 18px;
+
+  font-size: 15px;
+  color: #362724;
+
+  box-shadow: 0 3px 10px rgba(124, 74, 69, 0.08);
+
+  outline: none;
+}
+
+/* ========================================
+   OPEN SCRAPBOOK
+======================================== */
+
+/*
+   This is the actual scrapbook image.
+
+   The PNG already contains the complete open book,
+   including both pages and the center seam.
+
+   Recipe content sits on top of this background.
+*/
+
+/* ========================================
+   OPEN SCRAPBOOK
+======================================== */
+
+.open-recipe-book {
+  position: relative;
+
+  width: 100%;
+  margin-left: 0;
+
+  aspect-ratio: 1536 / 1080;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  box-sizing: border-box;
+
+  background-image: url("/images/empty_scrap_book.png");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% 100%;
+
+  background-color: transparent !important;
+
+  padding: 45px 70px 65px;
+
+  z-index: 1;
+}
+
+/* ============================== Scrapbook Pages ============================== */
+
+/*
+   These sections stay transparent so the scrapbook image
+   underneath them can remain visible.
+*/
+
+.recipe-book-left-page,
+.recipe-book-right-page {
+  position: relative;
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  background: transparent !important;
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0;
+}
+
+/* Left scrapbook page */
+
+.recipe-book-left-page {
+  padding: 20px 45px 70px 35px;
+  text-align: center;
+}
+
+/* Right scrapbook page */
+
+.recipe-book-right-page {
+  padding: 20px 35px 70px 45px;
+  text-align: center;
+}
+
+/* ============================== Individual Recipe ============================== */
+
+/*
+   One recipe now fills one physical scrapbook page.
+   This gives recipes with longer ingredient lists more room.
+*/
+
+.recipe-book-recipe-slot {
+  flex: 1;
+
+  min-height: 0;
+
+  overflow: visible;
+}
+
+/* ============================== Recipe Title ============================== */
+
+.recipe-book-recipe-title {
+  font-family: Georgia, "Times New Roman", serif;
+
+  color: #3f3531;
+
+  font-size: 24px;
+
+  margin: 0 0 10px;
+}
+
+/* ============================== Recipe Section Title ============================== */
+
+.recipe-book-section-title {
+  font-family: Georgia, "Times New Roman", serif;
+
+  color: #7c4a45;
+
+  font-size: 18px;
+
+  margin: 10px 0 6px;
+}
+
+/* ============================== Recipe Ingredients ============================== */
+
+.recipe-book-ingredients {
+  margin-top: 5px;
+  padding-left: 0;
+  list-style: none;
+
+  color: #2b1f1b;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.35;
+}
+
+.recipe-book-ingredients li {
+  margin-bottom: 4px;
+}
+
+/* ============================== Recipe Photograph ============================== */
+
+.recipe-scrapbook-image {
+  display: block;
+
+  width: 60%;
+  max-width: 220px;
+  max-height: 170px;
+
+  object-fit: cover;
+
+  margin: 10px auto;
+  padding: 8px;
+
+  background: #fffdf8;
+
+  box-shadow: 0 5px 12px rgba(80, 55, 40, 0.18);
+
+  transform: rotate(2deg);
+}
+
+/* ============================== Missing Recipe Photo ============================== */
+
+/*
+   Used when a real recipe exists but does not have a saved image.
+*/
+
+.scrapbook-photo,
+.recipe-placeholder-photo {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 150px;
+  height: 120px;
+
+  margin: 10px auto;
+
+  box-sizing: border-box;
+
+  background: #fffaf2;
+
+  border: 2px dashed #c99f7c;
+
+  color: #92715a;
+
+  font-family: Georgia, "Times New Roman", serif;
+
+  box-shadow: 0 4px 10px rgba(90, 60, 40, 0.08);
+
+  transform: rotate(2deg);
+}
+
+/* Food emoji used inside a missing-photo placeholder */
+
+.recipe-placeholder-emoji {
+  font-size: 58px;
+  line-height: 1;
+}
+
+/* ============================== Empty Recipe Spot ============================== */
+
+/*
+   Used when a scrapbook page does not have a recipe yet.
+*/
+
+.empty-recipe-page {
+  flex: 1;
+
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  font-family: Georgia, "Times New Roman", serif;
+
+  color: #7c4a45;
+}
+
+/* Empty scrapbook photo */
+
+.empty-recipe-placeholder {
+  width: 150px;
+  height: 120px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #fffaf2;
+
+  border: 2px dashed #c99f7c;
+
+  box-shadow: 0 4px 10px rgba(90, 60, 40, 0.08);
+
+  transform: rotate(2deg);
+}
+
+/* Large emoji inside an empty scrapbook photo */
+
+.empty-recipe-emoji {
+  font-size: 52px;
+  line-height: 1;
+}
+
+/* ============================== Empty Recipe Memo ============================== */
+
+.empty-recipe-memo {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  width: 85%;
+
+  margin-top: 16px;
+  padding: 12px 14px;
+
+  box-sizing: border-box;
+
+  background: #fff4ed;
+
+  border: 2px solid #edb6a8;
+  border-radius: 12px;
+
+  color: #541906;
+
+  font-family: Georgia, "Times New Roman", serif;
+
+  transform: rotate(-2deg);
+
+  box-shadow: 0 4px 10px rgba(120, 70, 50, 0.08);
+}
+
+.empty-recipe-memo strong {
+  font-size: 17px;
+}
+
+.empty-recipe-memo span {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+/* ============================== Scrapbook Navigation ============================== */
+
+/* ========================================
+   SCRAPBOOK PAGE TURNING NAVIGATION
+======================================== */
+
+/*
+   The navigation sits ON TOP of the scrapbook
+   so the arrows can be used to flip through
+   the recipe book.
+*/
+
+/* ========================================
+   SCRAPBOOK PAGE TURNING NAVIGATION
+======================================== */
+
+.recipe-book-navigation {
+  position: absolute;
+  left: 50%;
+  bottom: -25px;
+  transform: translateX(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  z-index: 50;
+}
+
+/* ============================== Navigation Buttons ============================== */
+
+.book-page-arrow {
+  position: relative;
+  z-index: 21;
+
+  width: 90px;
+  height: 52px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  background: transparent;
+
+  border: 2px solid #2f2926;
+
+  color: #2f2926;
+
+  font-family: Georgia, "Times New Roman", serif;
+
+  font-size: 19px;
+  letter-spacing: 1px;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+/* ============================== Next Arrow ============================== */
+
+.next-page-arrow {
+  clip-path: polygon(0 50%, 18% 0, 18% 24%, 100% 24%, 100% 76%, 18% 76%, 18% 100%);
+}
+
+/* ============================== Previous Arrow ============================== */
+
+.previous-page-arrow {
+  clip-path: polygon(0 24%, 82% 24%, 82% 0, 100% 50%, 82% 100%, 82% 76%, 0 76%);
+}
+
+/* ============================== Arrow Symbol ============================== */
+
+.book-page-arrow span {
+  font-family: Georgia, "Times New Roman", serif;
+
+  font-size: 30px;
+
+  line-height: 1;
+}
+
+/* ============================== Page Number ============================== */
+
+.recipe-book-page-number {
+  min-width: 55px;
+
+  text-align: center;
+
+  color: #2f2926;
+
+  font-family: Georgia, "Times New Roman", serif;
+
+  font-size: 19px;
+}
+
+/* ============================== Navigation Hover ============================== */
+
+.book-page-arrow:not(:disabled):hover {
+  background: rgba(124, 74, 69, 0.08);
+
+  transform: translateY(-2px);
+}
+
+/* ============================== Disabled Navigation ============================== */
+
+.book-page-arrow:disabled {
+  opacity: 0.3;
+
+  cursor: default;
+
+  transform: none;
+}
+
+/* ========================================
+   RECIPES BELOW THE SCRAPBOOK
+======================================== */
+
+/*
+   Kept from the original Recipe Book CSS.
+   These styles are separate from the open scrapbook.
+*/
+
+.recipe-book-recipes {
+  margin-top: 35px;
+}
+
+.recipe-book-list {
+  background: #fff8f6 !important;
+
+  padding: 18px !important;
+
+  margin-bottom: 18px !important;
+
+  border-radius: 24px !important;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+
+  box-sizing: border-box;
+}
+
+.recipe-book-list h3 {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin: 0 !important;
+
+  color: #7c4a45 !important;
+
+  font-size: 22px !important;
+}
+
+/* ============================== Recipe Book Note ============================== */
+
+.recipe-book-note {
+  width: 75%;
+
+  margin: 40px auto 0;
+
+  padding: 20px;
+
+  box-sizing: border-box;
+
+  background: #fff4ed;
+
+  border: 2px solid #edb6a8;
+
+  border-radius: 40%;
+
+  color: #79584b;
+
+  font-family: Georgia, "Times New Roman", serif;
+
+  font-size: 19px;
+  line-height: 1.5;
+
+  transform: rotate(-2deg);
+
+  box-shadow: 0 4px 10px rgba(120, 70, 50, 0.08);
+}
+
+/* ========================================
+   LONG RECIPE - COMPACT MODE
+======================================== */
+
+/*
+   Recipes with more than 9 ingredients get
+   a little extra room by shrinking their
+   contents slightly.
+
+   Normal recipes are not affected.
+*/
+
+.recipe-book-recipe-slot-compact .recipe-book-recipe-title {
+  font-size: 21px;
+  margin-bottom: 6px;
+}
+
+.recipe-book-recipe-slot-compact .recipe-scrapbook-image,
+.recipe-book-recipe-slot-compact .recipe-placeholder-photo {
+  max-height: 130px;
+  margin: 6px auto;
+}
+
+.recipe-book-recipe-slot-compact .recipe-book-section-title {
+  font-size: 16px;
+  margin: 6px 0 4px;
+}
+
+.recipe-book-recipe-slot-compact .recipe-book-ingredients {
+  line-height: 1.15;
+  margin-top: 3px;
+}
+
+.recipe-book-recipe-slot-compact .recipe-book-ingredients li {
+  margin-bottom: 2px;
+}
+
+/* ========================================
+   RECIPE BOOK - REMOVE BACKGROUND LAYERS
+======================================== */
+
+/*
+   The Recipe Book should sit directly over
+   the app background.
+
+   The scrapbook image itself remains untouched.
+*/
+
+.recipe-book-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+}
+
+/* ========================================
+   MOBILE
+======================================== */
+
+@media (max-width: 800px) {
+  .recipe-book-page {
+    padding: 10px 20px 20px;
   }
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
+  .recipe-book-page > h2 {
+    font-size: 32px !important;
   }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
+
+  .recipe-book-page > input {
+    width: 100% !important;
   }
+
+  .open-recipe-book {
+    grid-template-columns: 1fr;
+
+    min-height: 1100px;
+
+    background-size: 100% 100%;
+
+    padding: 100px 45px;
+  }
+
+  .recipe-book-left-page {
+    padding: 20px;
+  }
+
+  .recipe-book-right-page {
+    padding: 20px;
+  }
+
+  /* Make the two book pages fill the entire book */
+  .recipe-book-left-page,
+  .recipe-book-right-page {
+    min-height: 900px;
+    box-sizing: border-box;
+  }
+
+  /* Keep the navigation arrows at the bottom of each page */
+  .book-page-arrow {
+    bottom: 25px;
+  }
+
+  .recipe-scrapbook-image {
+    width: 80%;
+  }
+}
+
+/* ============================== Responsive Discover Grid ============================== */
+
+/* Medium screens */
+@media (max-width: 1000px) {
+  .discover-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+/* Small screens */
+@media (max-width: 700px) {
+  .discover-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* ========================================
+   SIDEBAR + PAGE RESPONSIVENESS
+======================================== */
+
+/* Medium screens */
+@media (max-width: 1000px) {
+  .sidebar {
+    flex-basis: 200px;
+    width: 200px;
+    min-width: 200px;
+  }
+
+  .sidebar-open {
+    flex-basis: 200px;
+    width: 200px;
+    min-width: 200px;
+  }
+
+  .sidebar-collapsed {
+    flex-basis: 64px;
+    width: 64px;
+    min-width: 64px;
+  }
+
+  .page-wrapper {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+
+    /* NO outside margin */
+    margin: 0;
+
+    padding: 30px 25px;
+  }
+}
+
+/* Small screens */
+@media (max-width: 700px) {
+  .sidebar {
+    flex-basis: 64px;
+    width: 64px;
+    min-width: 64px;
+
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .sidebar-open {
+    flex-basis: 200px;
+    width: 200px;
+    min-width: 200px;
+  }
+
+  .sidebar-collapsed {
+    flex-basis: 64px;
+    width: 64px;
+    min-width: 64px;
+  }
+
+  .page-wrapper {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+
+    /* Stay attached to the sidebar */
+    margin: 0;
+
+    padding: 25px 15px;
+
+    border-radius: 24px;
+  }
+}
+
+/* ============================== Planner Page ============================== */
+
+.planner-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px 60px;
+  box-sizing: border-box;
+}
+
+/* ============================== Planner Title ============================== */
+
+.planner-title {
+  text-align: center;
+  color: var(--theme-accent);
+  margin: 0 0 20px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+}
+
+/* ============================== Weekly Planner Grid ============================== */
+
+.planner-week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 30px 14px;
+  margin-top: 20px;
+}
+
+/* ============================== Day Card ============================== */
+
+.planner-day-card {
+  background: #fffaf7;
+  border-radius: 24px;
+  padding: 18px 20px;
+  min-height: 140px;
+  cursor: pointer;
+  box-shadow: 0 5px 14px rgba(100, 70, 45, 0.1);
+  border: 1px solid var(--theme-hover);
+  color: #5f4039;
+  font-family: Georgia, "Times New Roman", serif;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.planner-day-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(100, 70, 45, 0.15);
+}
+
+.planner-day-card h3 {
+  margin: 0;
+  font-size: 21px;
+  color: var(--theme-accent);
+}
+
+/* ============================== Recipes Inside Day Card ============================== */
+
+.planner-day-recipes {
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.planner-more-count {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #8b6b61;
+}
+
+/* ============================== Planner Modal Overlay ============================== */
+
+.planner-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(60, 40, 40, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* ============================== Planner Modal ============================== */
+
+.planner-modal {
+  position: relative;
+  background: #fffaf7;
+  padding: 28px;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 550px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 30px rgba(80, 55, 40, 0.2);
+  border: 1px solid var(--theme-hover);
+  color: #5f4039;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* ============================== Close Button ============================== */
+
+.planner-close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.planner-close-button:hover {
+  background: #dc2626;
+}
+
+/* ============================== Modal Title ============================== */
+
+.planner-modal-title {
+  color: var(--theme-accent);
+  margin: 0 0 10px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* ============================== Planner Search ============================== */
+
+.planner-search {
+  width: 100%;
+  padding: 10px 12px;
+  margin: 10px 0 15px;
+  box-sizing: border-box;
+  background: #fffdf9;
+  color: #5f4039;
+  border: 2px solid var(--theme-hover);
+  border-radius: 12px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  outline: none;
+}
+
+.planner-search:focus {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px rgba(217, 155, 145, 0.15);
+}
+
+.planner-search::placeholder {
+  color: #9a8780;
+}
+
+/* ============================== Section Headings ============================== */
+
+.planner-section-heading {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: var(--theme-accent);
+}
+
+/* ============================== Planned Recipes ============================== */
+
+.planner-planned-section {
+  margin-bottom: 18px;
+}
+
+.planner-planned-recipe {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: var(--theme-hover);
+  border: 1px solid var(--theme-accent);
+  border-radius: 14px;
+}
+
+.planner-planned-recipe-name {
+  flex: 1;
+  cursor: pointer;
+}
+
+.planner-planned-recipe-name:hover {
+  color: var(--theme-accent);
+  text-decoration: underline;
+}
+
+/* ============================== Remove Recipe Button ============================== */
+
+.planner-remove-button {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.planner-remove-button:hover {
+  background: #dc2626;
+}
+
+/* ============================== Available Recipes ============================== */
+
+.planner-available-recipes {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+/* ============================== Available Recipe ============================== */
+
+.planner-available-recipe {
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #fff8f6;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.planner-available-recipe:hover {
+  background: var(--theme-hover);
+  transform: translateX(2px);
+}
+
+/* ========================================
+   GROCERY LIST
+======================================== */
+/* ========================================
+   PLANNER EMPTY DAY HINT
+======================================== */
+
+.planner-empty-hint {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #8a6a63;
+  font-style: italic;
+}
+
+/* ========================================
+   PLANNER RANDOMIZER
+======================================== */
+
+.planner-randomizer {
+  width: 100%;
+  max-width: 1100px;
+  margin: 120px auto 10px;
+  padding: 28px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.07);
+  text-align: center;
+}
+
+.planner-randomizer-header h3 {
+  margin: 0;
+  color: var(--theme-accent);
+  font-size: 24px;
+}
+
+.planner-randomizer-header p {
+  margin: 6px 0 20px;
+  color: #7d625b;
+  font-size: 16px;
+}
+
+/* ========================================
+   RANDOM PICK BUTTON
+======================================== */
+
+.planner-random-pick-button {
+  border: none;
+  border-radius: 14px;
+  padding: 13px 24px;
+  background: var(--theme-accent);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.planner-random-pick-button:hover {
+  transform: translateY(-2px);
+}
+
+/* ========================================
+   RANDOM RESULT
+======================================== */
+
+.planner-random-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 20px;
+}
+
+.planner-random-image {
+  width: 130px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.planner-random-info h3 {
+  margin: 0;
+  color: #5f4039;
+  font-size: 22px;
+}
+
+.planner-random-category {
+  margin: 6px 0 14px;
+  color: #8a6a63;
+}
+
+/* ========================================
+   RANDOMIZER BUTTONS
+======================================== */
+
+.planner-random-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.planner-random-buttons button {
+  border: none;
+  border-radius: 12px;
+  padding: 9px 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.planner-random-buttons button:hover {
+  transform: translateY(-1px);
+}
+
+.planner-reroll-button {
+  background: var(--theme-sidebar);
+  color: #5f4039;
+}
+
+.planner-save-random-button {
+  background: var(--theme-accent);
+  color: white;
+}
+
+.planner-give-up-button {
+  background: #eeeeee;
+  color: #5f4039;
+}
+
+/* ========================================
+   RANDOMIZER MESSAGE
+======================================== */
+
+.planner-random-message {
+  margin: 16px 0 0;
+  color: var(--theme-accent);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* ========================================
+   MOBILE RANDOMIZER
+======================================== */
+
+@media (max-width: 700px) {
+  .planner-randomizer {
+    padding: 20px;
+    margin-top: 25px;
+  }
+
+  .planner-random-result {
+    flex-direction: column;
+  }
+
+  .planner-random-image {
+    width: 180px;
+    height: 130px;
+  }
+
+  .planner-random-buttons {
+    flex-direction: column;
+  }
+
+  .planner-random-buttons button {
+    width: 100%;
+  }
+}
+/* ============================== Grocery Page ============================== */
+
+.grocery-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px 60px;
+  box-sizing: border-box;
+}
+
+/* ============================== Grocery Title ============================== */
+
+.grocery-title {
+  text-align: center;
+  color: var(--theme-accent);
+  margin: 0 0 20px;
+  font-size: 30px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* ============================== Add Grocery Item ============================== */
+
+.grocery-add-area {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.grocery-add-input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--theme-hover);
+  background: #fff8f6;
+  color: #5f4039;
+  font-size: 16px;
+  outline: none;
+}
+
+.grocery-add-input:focus {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px rgba(217, 155, 145, 0.15);
+}
+
+.grocery-add-input::placeholder {
+  color: #9a7770;
+}
+
+.grocery-add-button {
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: none;
+  background: var(--theme-accent);
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.grocery-add-button:hover {
+  background: var(--theme-accent);
+}
+
+/* ============================== Duplicate Message ============================== */
+
+.grocery-duplicate-message {
+  background: var(--theme-accent);
+  color: white;
+  border-radius: 18px;
+  padding: 14px 20px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-weight: bold;
+  box-shadow: 0 5px 15px rgba(80, 55, 40, 0.2);
+  border: 2px solid var(--theme-accent);
+}
+
+/* ============================== Shopping List ============================== */
+
+.grocery-list-container {
+  background: #fffaf7;
+  border: 1px solid var(--theme-hover);
+  border-radius: 24px;
+  padding: 14px;
+  box-shadow: 0 5px 14px rgba(100, 70, 45, 0.08);
+}
+
+/* ============================== Section Title ============================== */
+
+.grocery-section-title {
+  margin: 0 0 6px;
+  color: var(--theme-accent);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+}
+
+/* ============================== Grocery Tip ============================== */
+
+.grocery-tip {
+  margin: 0 0 15px;
+  color: #8a665e;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* ============================== Empty List ============================== */
+
+.grocery-empty-message {
+  color: #9a7770;
+  text-align: center;
+  padding: 20px;
+}
+
+/* ============================== Grocery Categories ============================== */
+
+.grocery-category-section {
+  margin-top: 10px;
+}
+
+.grocery-household-section {
+  margin-top: 20px;
+}
+
+.grocery-category-title {
+  color: var(--theme-accent);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  margin: 10px 0 8px;
+}
+
+/* ============================== Grocery Item ============================== */
+
+.grocery-item-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  background: #fffdfb;
+  border: 1px solid var(--theme-hover);
+  border-radius: 16px;
+  transition: background 0.2s ease;
+}
+
+.grocery-item-checked {
+  background: #fff8f6;
+}
+
+/* ============================== Grocery Item Name ============================== */
+
+.grocery-item-name {
+  flex: 1;
+  color: #5f4039;
+  font-size: 16px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.grocery-item-name-checked {
+  text-decoration: line-through;
+  color: #9a7770;
+}
+
+/* ============================== Three Dot Menu ============================== */
+
+.grocery-menu-button {
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  background: #f3e4df;
+  color: var(--theme-accent);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.grocery-menu-button:hover {
+  background: var(--theme-hover);
+}
+
+/* ============================== Options Menu ============================== */
+
+.grocery-options-menu {
+  position: absolute;
+  right: 10px;
+  top: 48px;
+  z-index: 50;
+  width: 210px;
+  background: #fffaf7;
+  border: 1px solid var(--theme-hover);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 8px 22px rgba(80, 55, 40, 0.18);
+}
+
+/* ============================== Option Buttons ============================== */
+
+.grocery-option-button {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #5f4039;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.grocery-option-button:hover {
+  background: var(--theme-hover);
+}
+
+.grocery-option-remove {
+  color: #b42318;
+}
+
+.grocery-option-remove:hover {
+  background: #fce8e6;
+}
+
+/* ============================== Clear Shopping List ============================== */
+
+.grocery-clear-button {
+  display: block;
+  margin: 18px auto 4px;
+  padding: 9px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--theme-hover);
+  background: #fff8f6;
+  color: #8a665e;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.grocery-clear-button:hover {
+  background: var(--theme-hover);
+}
+
+/* ============================== Don't Forget ============================== */
+
+.grocery-dont-forget {
+  background: #fff8f3;
+  border: 1px solid var(--theme-hover);
+  border-radius: 24px;
+  padding: 14px;
+  margin-top: 25px;
+  box-shadow: 0 5px 14px rgba(100, 70, 45, 0.08);
+}
+
+.grocery-dont-forget-description {
+  margin: 0 0 15px;
+  color: #8a665e;
+  font-size: 14px;
+}
+
+/* ============================== Don't Forget Item ============================== */
+
+.grocery-dont-forget-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fffdfb;
+  border: 1px solid var(--theme-hover);
+  border-radius: 16px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+}
+
+/* ============================== Don't Forget Name ============================== */
+
+.grocery-dont-forget-name {
+  color: #5f4039;
+  font-size: 16px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* ============================== Frequency ============================== */
+
+.grocery-frequency {
+  color: #9a7770;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+/* ============================== Add Don't Forget Item ============================== */
+
+.grocery-dont-forget-add {
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  background: var(--theme-accent);
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.grocery-dont-forget-add:hover {
+  background: var(--theme-accent);
+}
+
+/* ============================== Clear Confirmation Overlay ============================== */
+
+.grocery-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* ============================== Clear Confirmation Modal ============================== */
+
+.grocery-confirm-modal {
+  width: 90%;
+  max-width: 400px;
+  background: #fffaf7;
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid var(--theme-hover);
+  box-shadow: 0 12px 30px rgba(80, 55, 40, 0.2);
+  text-align: center;
+}
+
+/* ============================== Confirmation Icon ============================== */
+
+.grocery-confirm-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+/* ============================== Confirmation Title ============================== */
+
+.grocery-confirm-title {
+  color: var(--theme-accent);
+  font-family: Georgia, "Times New Roman", serif;
+  margin: 0 0 10px;
+}
+
+/* ============================== Confirmation Text ============================== */
+
+.grocery-confirm-text {
+  color: #8a665e;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* ============================== Confirmation Buttons ============================== */
+
+.grocery-confirm-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* ============================== Cancel ============================== */
+
+.grocery-cancel-button {
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--theme-hover);
+  background: #fffdfb;
+  color: var(--theme-accent);
+  cursor: pointer;
+}
+
+.grocery-cancel-button:hover {
+  background: var(--theme-hover);
+}
+
+/* ============================== Confirm Clear ============================== */
+
+.grocery-confirm-clear-button {
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: none;
+  background: var(--theme-accent);
+  color: white;
+  cursor: pointer;
+}
+
+.grocery-confirm-clear-button:hover {
+  background: var(--theme-accent);
+}
+
+/* ==============================
+   Sign In Page
+============================== */
+
+.signin-page {
+  position: fixed;
+  inset: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 50px 20px;
+  box-sizing: border-box;
+
+  background-image: url("/images/whimsicle.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  overflow: hidden;
+  z-index: 5000;
+}
+
+/* Keep the sign-in card above the photo overlay */
+.signin-card {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================== Sign In Card ============================== */
+
+.signin-card {
+  width: 100%;
+  max-width: 430px;
+  padding: 38px 36px;
+  box-sizing: border-box;
+
+  background: #fffaf7;
+  border: 1px solid var(--theme-hover);
+  border-radius: 28px;
+
+  box-shadow:
+    0 10px 30px rgba(100, 70, 45, 0.1),
+    0 2px 8px rgba(100, 70, 45, 0.05);
+
+  text-align: left;
+}
+
+/* ============================== Branding ============================== */
+
+.signin-brand {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.signin-logo {
+  font-size: 48px;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.signin-title {
+  margin: 0;
+  color: var(--theme-accent);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.signin-welcome {
+  margin-top: 10px;
+  color: #5f4039;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+}
+
+.signin-subtitle {
+  margin-top: 7px;
+  color: #8a7068;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ============================== Sign In Fields ============================== */
+
+.signin-field {
+  margin-bottom: 18px;
+}
+
+.signin-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: #5f4039;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* ============================== Password Label ============================== */
+
+.signin-password-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.signin-password-label label {
+  margin-bottom: 7px;
+}
+
+/* ============================== Forgot Password ============================== */
+
+.signin-forgot-button {
+  border: none;
+  background: transparent;
+  color: #a7655e;
+  padding: 0;
+  margin-bottom: 7px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.signin-forgot-button:hover {
+  color: var(--theme-accent);
+  text-decoration: underline;
+}
+
+/* ============================== Inputs ============================== */
+
+.signin-field input {
+  width: 100%;
+  padding: 12px 14px;
+  box-sizing: border-box;
+
+  background: #fffdfb;
+  border: 2px solid var(--theme-hover);
+  border-radius: 12px;
+
+  color: #4f403a;
+  font-size: 15px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.signin-field input:focus {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px rgba(217, 155, 145, 0.15);
+}
+
+.signin-field input::placeholder {
+  color: #ad9992;
+}
+
+/* ============================== Sign In Button ============================== */
+
+.signin-button {
+  width: 100%;
+  padding: 13px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: var(--theme-accent);
+  color: rgb(1, 1, 1);
+
+  font-size: 16px;
+  font-weight: bold;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.signin-button:hover {
+  background: var(--theme-accent);
+  transform: translateY(-1px);
+}
+
+/* ============================== Divider ============================== */
+
+.signin-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin: 24px 0;
+
+  color: #a58c84;
+  font-size: 13px;
+}
+
+.signin-divider::before,
+.signin-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--theme-hover);
+}
+
+.signin-divider span {
+  flex-shrink: 0;
+}
+
+/* ============================== Create Account ============================== */
+
+.signin-create-button {
+  width: 100%;
+  padding: 12px;
+
+  border: 2px solid var(--theme-accent);
+  border-radius: 14px;
+
+  background: #fff8f6;
+  color: var(--theme-accent);
+
+  font-size: 15px;
+  font-weight: bold;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.signin-create-button:hover {
+  background: var(--theme-hover);
+  border-color: var(--theme-accent);
+}
+
+/* ============================== Sign In Footer ============================== */
+
+.signin-footer {
+  margin: 24px 0 0;
+
+  text-align: center;
+
+  color: #a58c84;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ==============================
+   Temporary Sign Out Button
+============================== */
+
+.sidebar-signout {
+  margin-top: auto;
+  background: #ffffff;
+  padding: 12px 16px;
+}
+
+.sidebar-signout:hover {
+  background: var(--theme-hover);
+}
+
+/* ========================================
+   SETTINGS PAGE
+======================================== */
+
+.settings-section {
+  margin-top: 20px;
+}
+
+/* ========================================
+   SETTINGS TITLE
+======================================== */
+
+.settings-section h1,
+section > h1 {
+  color: var(--theme-accent);
+  font-size: 38px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.7);
+}
+
+/* ========================================
+   WALLPAPER FOLDER BUTTON
+======================================== */
+
+.settings-folder-button,
+.settings-dropdown {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #5f4039;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: 0.2s ease;
+}
+
+.settings-folder-button:hover,
+.settings-dropdown:hover {
+  transform: translateY(-1px);
+}
+
+/* ========================================
+   WALLPAPER GRID
+======================================== */
+
+.wallpaper-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  max-width: 1200px;
+}
+
+/* ========================================
+   WALLPAPER OPTIONS
+======================================== */
+
+.wallpaper-option,
+.wallpaper-card {
+  padding: 8px;
+  border: 2px solid #ddd;
+  border-radius: 16px;
+  background: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+  transition: 0.2s ease;
+  color: #5f4039;
+  font-weight: bold;
+}
+
+.wallpaper-option:hover,
+.wallpaper-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--theme-accent);
+}
+
+.wallpaper-selected {
+  border: 3px solid var(--theme-accent);
+}
+
+/* ========================================
+   WALLPAPER IMAGES
+======================================== */
+
+.wallpaper-option img,
+.wallpaper-card img,
+.wallpaper-thumbnail {
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* ========================================
+   WALLPAPER NAME
+======================================== */
+
+.wallpaper-option span,
+.wallpaper-card span {
+  display: block;
+  margin-top: 8px;
+  color: #5f4039;
+  font-weight: bold;
+}
+
+/* ========================================
+   CURRENT WALLPAPER LABEL
+======================================== */
+
+.wallpaper-card small {
+  display: block;
+  margin-top: 5px;
+  color: var(--theme-accent);
+  font-size: 11px;
+}
+
+/* ========================================
+   WALLPAPER PREVIEW MODAL
+======================================== */
+
+.wallpaper-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px;
+
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.wallpaper-modal {
+  width: min(900px, 90vw);
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  padding: 24px;
+
+  background: #fffaf7;
+  border-radius: 22px;
+
+  text-align: center;
+}
+
+.wallpaper-modal h2 {
+  margin: 0 0 18px 0;
+  color: var(--theme-accent);
+  font-size: 28px;
+}
+
+.wallpaper-preview {
+  display: block;
+
+  width: 100%;
+  max-height: 60vh;
+
+  object-fit: cover;
+
+  border-radius: 14px;
+}
+
+.wallpaper-modal p {
+  margin: 18px 0;
+
+  color: #6b4a4a;
+  font-size: 16px;
+}
+
+/* ========================================
+   PREVIEW BUTTONS
+======================================== */
+
+.wallpaper-modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.wallpaper-modal-buttons button {
+  border: none;
+  border-radius: 12px;
+
+  padding: 12px 20px;
+
+  font-size: 15px;
+  font-weight: bold;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.wallpaper-modal-buttons button:hover {
+  transform: translateY(-1px);
+}
+
+.wallpaper-cancel-button {
+  background: #eeeeee;
+  color: #4d3b3b;
+}
+
+.wallpaper-confirm-button {
+  background: var(--theme-accent);
+  color: #ffffff;
+}
+
+/* ========================================
+   WALLPAPER NOTE
+======================================== */
+
+.wallpaper-note {
+  margin: 10px 0 0 4px;
+
+  font-size: 14px;
+
+  color: #6b4a4a;
+}
+
+/* ========================================
+   THEME OPTIONS
+======================================== */
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  max-width: 1200px;
+}
+
+.theme-card {
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #5f4039;
+  font-weight: bold;
+  cursor: pointer;
+  overflow: hidden;
+  transition: 0.2s ease;
+  text-align: left;
+}
+
+.theme-card:hover {
+  transform: translateY(-2px);
+}
+
+.theme-selected {
+  border: 3px solid var(--theme-accent);
+}
+
+.theme-preview {
+  width: 100%;
+  height: 80px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.theme-card span {
+  display: block;
+  color: #5f4039;
+  font-weight: bold;
+}
+
+.theme-card small {
+  display: block;
+  margin-top: 5px;
+  color: var(--theme-accent);
+  font-size: 11px;
+}
+
+/* =========================================================
+   THEME FINISHING PASS
+   Changes themeable UI only.
+   DOES NOT change:
+   - Wallpaper
+   - Recipe Book scrapbook image
+   - Recipe Book page text
+   ========================================================= */
+
+/* ==============================
+   HOME - PLANNED MEALS
+   ============================== */
+
+.planned-meals-card {
+  background: var(--theme-sidebar) !important;
+  border: 1px solid var(--theme-hover);
+}
+
+.planned-meal-row {
+  border-bottom-color: var(--theme-hover);
+}
+
+/* ==============================
+   DISCOVER - SEARCH + RECIPE TILES
+   ============================== */
+
+.discover-search {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-accent) !important;
+  color: var(--theme-text) !important;
+}
+
+.discover-search:focus {
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 0 0 3px var(--theme-hover) !important;
+}
+
+.discover-recipe-card {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-hover) !important;
+}
+
+.discover-recipe-card:hover {
+  background: var(--theme-hover) !important;
+}
+
+.discover-recipe-title {
+  color: var(--theme-accent) !important;
+}
+
+/* ==============================
+   NEW RECIPE - INPUTS
+   ============================== */
+
+.new-recipe-page input,
+.new-recipe-page textarea,
+.new-recipe-page input[type="text"],
+.recipe-name-input {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+.new-recipe-page input:focus,
+.new-recipe-page textarea:focus {
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 0 0 3px var(--theme-hover) !important;
+}
+
+.new-recipe-page input::placeholder,
+.new-recipe-page textarea::placeholder {
+  color: var(--theme-text) !important;
+  opacity: 0.65;
+}
+
+/* ==============================
+   NEW RECIPE - BUTTONS
+   ============================== */
+
+.auto-fill-button,
+.save-recipe-button {
+  background: var(--theme-accent) !important;
+}
+
+.clear-recipe-button {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-accent) !important;
+  color: var(--theme-accent) !important;
+}
+
+.clear-recipe-button:hover {
+  background: var(--theme-hover) !important;
+}
+
+/* ==============================
+   RECIPE BOOK - SEARCH ONLY
+   IMPORTANT:
+   The scrapbook image and recipe text
+   are intentionally NOT touched.
+   ============================== */
+
+.recipe-book-search {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-accent) !important;
+  color: #362724 !important;
+}
+
+.recipe-book-search:focus {
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 3px 10px var(--theme-hover) !important;
+}
+
+/* ==============================
+   GROCERY - MAIN CONTAINERS
+   ============================== */
+
+.grocery-list-container {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-hover) !important;
+}
+
+.grocery-dont-forget {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-hover) !important;
+}
+
+.grocery-dont-forget-item {
+  background: var(--theme-hover) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+.grocery-item-row {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-hover) !important;
+}
+
+.grocery-item-checked {
+  background: var(--theme-hover) !important;
+}
+
+/* ==============================
+   GROCERY - SEARCH / ADD INPUT
+   ============================== */
+
+.grocery-page input,
+.grocery-list-container input {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-accent) !important;
+  color: var(--theme-text) !important;
+}
+
+/* ==============================
+   GROCERY - HEADINGS / TEXT
+   ============================== */
+
+.grocery-section-title,
+.grocery-category-title {
+  color: var(--theme-accent) !important;
+}
+
+.grocery-tip,
+.grocery-dont-forget-description {
+  color: var(--theme-text) !important;
+}
+
+/* ==============================
+   GROCERY - BUTTONS
+   ============================== */
+
+.grocery-menu-button {
+  background: var(--theme-hover) !important;
+  color: var(--theme-accent) !important;
+}
+
+.grocery-menu-button:hover {
+  background: var(--theme-accent) !important;
+  color: white !important;
+}
+
+.grocery-dont-forget-add {
+  background: var(--theme-accent) !important;
+}
+
+.grocery-clear-button {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-accent) !important;
+  color: var(--theme-accent) !important;
+}
+
+.grocery-clear-button:hover {
+  background: var(--theme-hover) !important;
+}
+
+/* ==============================
+   GROCERY - OPTIONS MENU
+   ============================== */
+
+.grocery-options-menu {
+  background: var(--theme-sidebar) !important;
+  border-color: var(--theme-hover) !important;
+}
+
+.grocery-option-button:hover {
+  background: var(--theme-hover) !important;
+}
+
+/* ==============================
+   GROCERY - DUPLICATE MESSAGE
+   ============================== */
+
+.grocery-duplicate-message {
+  background: var(--theme-accent) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+/* ==============================
+   PLANNER - KEEP EVERYTHING
+   CURRENTLY WORKING
+   ============================== */
+
+.planner-search:focus {
+  border-color: var(--theme-accent) !important;
+}
+
+.planner-planned-recipe {
+  background: var(--theme-hover) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+.planner-available-recipe:hover {
+  background: var(--theme-hover) !important;
+}
+
+/* ==============================
+   SIDEBAR ACTIVE BUTTON
+   ============================== */
+
+.sidebar-button:hover {
+  background: var(--theme-hover) !important;
+}
+
+.sidebar-button[style*="e58b88"] {
+  background: var(--theme-accent) !important;
+}
+
+/* ==============================
+   THEME PREVIEW MODAL
+   ============================== */
+
+.theme-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.theme-modal {
+  width: min(420px, 90%);
+  background: #fffaf5;
+  border-radius: 20px;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+}
+
+.theme-modal h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  color: #333333;
+}
+
+.theme-modal-preview {
+  width: 100%;
+  height: 100px;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.theme-modal p {
+  margin-bottom: 20px;
+}
+
+.theme-modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.theme-cancel-button,
+.theme-confirm-button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.theme-cancel-button {
+  background: #eeeeee;
+  color: #444;
+}
+
+.theme-confirm-button {
+  background: var(--theme-accent);
+  color: white;
+}
+
+.theme-cancel-button:hover,
+.theme-confirm-button:hover {
+  transform: translateY(-1px);
 }
