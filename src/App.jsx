@@ -94,6 +94,61 @@ export default function App() {
   // loads recipes from supabase sql
   const [recipes, setRecipes] = useState([]);
 
+  // ============================== Supabase Recipes ==============================
+  // Convert a Supabase recipe row into the format used by the app.
+  const formatSavedRecipe = (recipe) => ({
+    ...recipe,
+    ingredients:
+      typeof recipe.ingredients === "string"
+        ? (() => {
+            try {
+              const parsed = JSON.parse(recipe.ingredients);
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return recipe.ingredients ? recipe.ingredients.split("\n").filter(Boolean) : [];
+            }
+          })()
+        : Array.isArray(recipe.ingredients)
+          ? recipe.ingredients
+          : [],
+    instructions:
+      typeof recipe.instructions === "string"
+        ? (() => {
+            try {
+              const parsed = JSON.parse(recipe.instructions);
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return recipe.instructions ? recipe.instructions.split("\n").filter(Boolean) : [];
+            }
+          })()
+        : Array.isArray(recipe.instructions)
+          ? recipe.instructions
+          : [],
+    image: recipe.image || "",
+  });
+
+  // Load only the recipes belonging to the currently signed-in user.
+  const loadUserRecipes = async (currentUser) => {
+    if (!currentUser) {
+      setRecipes([]);
+      return;
+    }
+
+    const { data, error } = await supabase.from("recipes").select("*").eq("user_id", currentUser.id);
+
+    if (error) {
+      console.error("Error loading recipes:", error);
+      return;
+    }
+
+    setRecipes((data || []).map(formatSavedRecipe));
+  };
+
+  // Reload the user's recipes whenever authentication changes.
+  useEffect(() => {
+    loadUserRecipes(user);
+  }, [user]);
+
   // Make a sorted copy of the recipes so the original array is not changed.
   const filtered = [...recipes].sort((a, b) => {
     // favorites first
@@ -451,12 +506,7 @@ export default function App() {
   };
 
   // ============================== Save Recipe ==============================
-  // ===== SAVE RECIPES TO SUPABASE SQL FILE=====
   const saveRecipe = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
     if (!user) {
       alert("Please sign in before saving a recipe.");
       return;
@@ -472,7 +522,19 @@ export default function App() {
       image: newRecipe.image || "",
     };
 
-    const { data, error } = await supabase.from("recipes").insert([recipeToSave]).select().single();
+    let data;
+    let error;
+
+    if (editIndex !== null && recipes[editIndex]?.id) {
+      const result = await supabase.from("recipes").update(recipeToSave).eq("id", recipes[editIndex].id).eq("user_id", user.id).select().single();
+
+      data = result.data;
+      error = result.error;
+    } else {
+      const result = await supabase.from("recipes").insert([recipeToSave]).select().single();
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
       console.error("Error saving recipe:", error);
@@ -480,19 +542,94 @@ export default function App() {
       return;
     }
 
-    const savedRecipe = {
-      ...newRecipe,
-      id: data.id,
-      user_id: data.user_id,
-    };
+    const savedRecipe = formatSavedRecipe(data);
 
-    setRecipes((prev) => [...prev, savedRecipe]);
+    setRecipes((prev) => {
+      if (editIndex !== null && recipes[editIndex]?.id) {
+        return prev.map((recipe) => (recipe.id === savedRecipe.id ? savedRecipe : recipe));
+      }
 
+      return [...prev, savedRecipe];
+    });
+
+    setEditIndex(null);
     setRecipeAdded(true);
 
     setTimeout(() => {
       setRecipeAdded(false);
     }, 2000);
+  };
+
+  // Update a recipe in Supabase and React state.
+  const updateRecipeInSupabase = async (recipe) => {
+    if (!user || !recipe?.id) return false;
+
+    const recipeToSave = {
+      user_id: user.id,
+      name: recipe.name,
+      ingredients: JSON.stringify(recipe.ingredients || []),
+      instructions: JSON.stringify(recipe.instructions || []),
+      category: recipe.category || "",
+      favorite: recipe.favorite || false,
+      image: recipe.image || "",
+    };
+
+    const { data, error } = await supabase.from("recipes").update(recipeToSave).eq("id", recipe.id).eq("user_id", user.id).select().single();
+
+    if (error) {
+      console.error("Error updating recipe:", error);
+      return false;
+    }
+
+    const updatedRecipe = formatSavedRecipe(data);
+    setRecipes((prev) => prev.map((item) => (item.id === updatedRecipe.id ? updatedRecipe : item)));
+    return true;
+  };
+
+  // Delete a recipe from Supabase and React state.
+  const deleteRecipe = async (recipe) => {
+    if (!user || !recipe?.id) return;
+
+    const { error } = await supabase.from("recipes").delete().eq("id", recipe.id).eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error deleting recipe:", error);
+      alert("There was a problem deleting your recipe.");
+      return;
+    }
+
+    setRecipes((prev) => prev.filter((item) => item.id !== recipe.id));
+
+    if (activeRecipe?.id === recipe.id) {
+      setActiveRecipe(null);
+    }
+  };
+
+  // Update a recipe's favorite status in Supabase.
+  const toggleFavorite = async (recipe) => {
+    if (!user || !recipe?.id) return;
+
+    const updatedFavorite = !recipe.favorite;
+
+    const { data, error } = await supabase
+      .from("recipes")
+      .update({ favorite: updatedFavorite })
+      .eq("id", recipe.id)
+      .eq("user_id", user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating favorite:", error);
+      return;
+    }
+
+    const updatedRecipe = formatSavedRecipe(data);
+    setRecipes((prev) => prev.map((item) => (item.id === updatedRecipe.id ? updatedRecipe : item)));
+
+    if (activeRecipe?.id === updatedRecipe.id) {
+      setActiveRecipe(updatedRecipe);
+    }
   };
 
   // ============================== Grocery ==============================
@@ -507,25 +644,6 @@ export default function App() {
 
     setSelectedItems({});
   };
-
-  // ============================== Favorites & Recipes ==============================
-  // ===== FAVORITE =====
-  // Toggle the favorite value for one recipe.
-  const toggleFavorite = (index) => {
-    const updated = [...recipes];
-    updated[index].favorite = !updated[index].favorite;
-
-    setRecipes(updated);
-    localStorage.setItem("recipes", JSON.stringify(updated));
-  };
-  // Remove one recipe from the saved recipe list.
-  const deleteRecipe = (index) => {
-    const updated = recipes.filter((_, i) => i !== index);
-    setRecipes(updated);
-    localStorage.setItem("recipes", JSON.stringify(updated));
-  };
-
-  // ===== SEARCH =====
 
   // ============================== Planner ==============================
   // ===== PLANNER =====
@@ -885,17 +1003,7 @@ export default function App() {
               ✖
             </button>
 
-            <button
-              className="recipe-action recipe-action-delete"
-              onClick={() => {
-                const updated = recipes.filter((rec) => rec.name !== activeRecipe.name);
-
-                setRecipes(updated);
-                localStorage.setItem("recipes", JSON.stringify(updated));
-
-                setActiveRecipe(null);
-              }}
-            >
+            <button className="recipe-action recipe-action-delete" onClick={() => deleteRecipe(activeRecipe)}>
               🗑 Delete Recipe
             </button>
 
@@ -927,7 +1035,7 @@ export default function App() {
 
                 setNewRecipe(safeRecipe);
 
-                const index = recipes.findIndex((r) => r.name === activeRecipe.name);
+                const index = recipes.findIndex((r) => r.id === activeRecipe.id);
 
                 setEditIndex(index);
 
@@ -979,26 +1087,43 @@ export default function App() {
               </div>
             </section>
 
-            <button
-              className="recipe-action recipe-action-save"
-              onClick={() => {
-                const exists = recipes.some((rec) => rec.name === activeRecipe.name);
+            {!activeRecipe?.id && !recipes.some((recipe) => recipe.name === activeRecipe.name) && (
+              <button
+                className="recipe-action recipe-action-save"
+                onClick={async () => {
+                  if (!user) return;
 
-                if (!exists) {
-                  const updated = [...recipes, activeRecipe];
-                  setRecipes(updated);
-                  localStorage.setItem("recipes", JSON.stringify(updated));
+                  const recipeToSave = {
+                    user_id: user.id,
+                    name: activeRecipe.name || "",
+                    ingredients: JSON.stringify(activeRecipe.ingredients || []),
+                    instructions: JSON.stringify(activeRecipe.instructions || []),
+                    category: activeRecipe.category || "",
+                    favorite: activeRecipe.favorite || false,
+                    image: activeRecipe.image || "",
+                  };
 
+                  const { data, error } = await supabase.from("recipes").insert([recipeToSave]).select().single();
+
+                  if (error) {
+                    console.error("Error adding recipe:", error);
+                    alert("There was a problem saving this recipe.");
+                    return;
+                  }
+
+                  const savedRecipe = formatSavedRecipe(data);
+                  setRecipes((prev) => [...prev, savedRecipe]);
+                  setActiveRecipe(savedRecipe);
                   setRecipeAdded(true);
 
                   setTimeout(() => {
                     setRecipeAdded(false);
                   }, 2000);
-                }
-              }}
-            >
-              {recipeAdded ? "✅ Added to My Recipes!" : "➕ Add to My Recipes"}
-            </button>
+                }}
+              >
+                {recipeAdded ? "✅ Added to My Recipes!" : "➕ Add to My Recipes"}
+              </button>
+            )}
 
             <button
               className="recipe-action recipe-action-grocery"

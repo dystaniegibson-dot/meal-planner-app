@@ -30,12 +30,9 @@ body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-
   color: #222;
-
   /* Let the fruity background show through */
   background: transparent;
-
   overflow-x: hidden;
 }
 
@@ -64,16 +61,13 @@ body {
 .app-layout {
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: flex-start;
-
   width: 100%;
   min-width: 0;
   min-height: calc(100vh - 80px);
-
   margin: 0;
   padding: 0;
-
   box-sizing: border-box;
 }
 
@@ -85,35 +79,24 @@ body {
   flex: 0 0 230px;
   width: 230px;
   min-width: 230px;
-
   height: 100vh;
-
   display: flex;
   flex-direction: column;
   gap: 18px;
-
   background: var(--theme-sidebar);
-
   padding: 26px;
-
   border-radius: 0 32px 32px 0;
-
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-
-  position: sticky;
-  left: 0;
+  position: fixed;
   top: 0;
-
+  left: 0;
   align-self: flex-start;
-
   box-sizing: border-box;
-
   transition:
     width 0.3s ease,
     min-width 0.3s ease,
     flex-basis 0.3s ease,
     padding 0.3s ease;
-
   z-index: 1000;
   overflow: hidden;
 }
@@ -136,7 +119,6 @@ body {
   flex-basis: 70px;
   width: 70px;
   min-width: 70px;
-
   padding-left: 12px;
   padding-right: 12px;
 }
@@ -149,17 +131,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-
   background: transparent;
   border: none;
-
   cursor: pointer;
-
   font-size: 24px;
-
   padding: 0;
   margin: 0;
-
   white-space: nowrap;
 }
 
@@ -176,23 +153,15 @@ body {
 .sidebar-button {
   display: flex;
   align-items: center;
-
   gap: 10px;
-
   border: none;
   border-radius: 14px;
-
   text-align: left;
-
   cursor: pointer;
-
   transition: 0.2s;
-
   font-size: 16px;
   font-weight: bold;
-
   color: #2f2f2f;
-
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
@@ -202,14 +171,10 @@ body {
 
 .sidebar-icon {
   display: inline-flex;
-
   align-items: center;
   justify-content: center;
-
   flex-shrink: 0;
-
   width: 22px;
-
   font-size: 18px;
 }
 
@@ -235,9 +200,7 @@ body {
 
 .sidebar-collapsed .sidebar-button {
   justify-content: center;
-
   gap: 0;
-
   padding-left: 10px !important;
   padding-right: 10px !important;
 }
@@ -286,30 +249,20 @@ body {
 .page-wrapper {
   flex: 1;
   min-width: 0;
-
   width: auto;
   max-width: none;
-
   padding: 25px 30px 25px;
-
   /* IMPORTANT:
      Do NOT use margin: 0 auto here.
      The sidebar and page are now real columns. */
   margin: 20px 30px 20px 30px; /*      top   right   bottom   left
                                         20px   20px    20px    20px    */
-
   box-sizing: border-box;
-
   background: transparent;
-
   border-radius: 36px;
-
   box-shadow: none;
-
   min-height: calc(100vh - 40px);
-
   backdrop-filter: none;
-
   border: none;
 }
 
@@ -884,15 +837,11 @@ body {
 
 .recipe-book-page {
   position: relative;
-
   width: 100%;
   max-width: 1200px;
-
   margin: 0 auto;
   padding: 3px 20px 60px;
-
   box-sizing: border-box;
-
   background: transparent;
 }
 
@@ -900,11 +849,9 @@ body {
 
 .recipe-book-title {
   text-align: center;
-
   font-family: Georgia, "Times New Roman", serif;
   font-size: 38px;
   color: #261917;
-
   margin: 0 0 18px;
 }
 
@@ -912,24 +859,16 @@ body {
 
 .recipe-book-search {
   display: block;
-
   width: 330px;
   margin: 0 auto -7px;
-
   box-sizing: border-box;
-
   background: #fffaf5;
-
   border: 2px solid #efd0c7;
   border-radius: 25px;
-
   padding: 12px 18px;
-
   font-size: 15px;
   color: #362724;
-
   box-shadow: 0 3px 10px rgba(124, 74, 69, 0.08);
-
   outline: none;
 }
 
@@ -952,26 +891,18 @@ body {
 
 .open-recipe-book {
   position: relative;
-
   width: 100%;
   margin-left: 0;
-
   aspect-ratio: 1536 / 1080;
-
   display: grid;
   grid-template-columns: 1fr 1fr;
-
   box-sizing: border-box;
-
   background-image: url("/images/empty_scrap_book.png");
   background-repeat: no-repeat;
   background-position: center top;
-  background-size: 100% 100%;
-
+  background-size: contain;
   background-color: transparent !important;
-
   padding: 45px 70px 65px;
-
   z-index: 1;
 }
 
@@ -985,18 +916,12 @@ body {
 .recipe-book-left-page,
 .recipe-book-right-page {
   position: relative;
-
   min-width: 0;
-
   box-sizing: border-box;
-
   background: transparent !important;
-
   overflow: hidden;
-
   display: flex;
   flex-direction: column;
-
   gap: 0;
 }
 
@@ -1023,21 +948,17 @@ body {
 
 .recipe-book-recipe-slot {
   flex: 1;
-
   min-height: 0;
-
   overflow: visible;
+  cursor: pointer;
 }
 
 /* ============================== Recipe Title ============================== */
 
 .recipe-book-recipe-title {
   font-family: Georgia, "Times New Roman", serif;
-
   color: #3f3531;
-
   font-size: 24px;
-
   margin: 0 0 10px;
 }
 
@@ -1045,11 +966,8 @@ body {
 
 .recipe-book-section-title {
   font-family: Georgia, "Times New Roman", serif;
-
   color: #7c4a45;
-
   font-size: 18px;
-
   margin: 10px 0 6px;
 }
 
@@ -1059,7 +977,6 @@ body {
   margin-top: 5px;
   padding-left: 0;
   list-style: none;
-
   color: #2b1f1b;
   font-family: Georgia, "Times New Roman", serif;
   line-height: 1.35;
@@ -1073,20 +990,14 @@ body {
 
 .recipe-scrapbook-image {
   display: block;
-
   width: 60%;
   max-width: 220px;
   max-height: 170px;
-
   object-fit: cover;
-
   margin: 10px auto;
   padding: 8px;
-
   background: #fffdf8;
-
   box-shadow: 0 5px 12px rgba(80, 55, 40, 0.18);
-
   transform: rotate(2deg);
 }
 
@@ -1099,27 +1010,17 @@ body {
 .scrapbook-photo,
 .recipe-placeholder-photo {
   display: flex;
-
   align-items: center;
   justify-content: center;
-
   width: 150px;
   height: 120px;
-
   margin: 10px auto;
-
   box-sizing: border-box;
-
   background: #fffaf2;
-
   border: 2px dashed #c99f7c;
-
   color: #92715a;
-
   font-family: Georgia, "Times New Roman", serif;
-
   box-shadow: 0 4px 10px rgba(90, 60, 40, 0.08);
-
   transform: rotate(2deg);
 }
 
@@ -1138,19 +1039,13 @@ body {
 
 .empty-recipe-page {
   flex: 1;
-
   min-height: 0;
-
   display: flex;
   flex-direction: column;
-
   align-items: center;
   justify-content: center;
-
   text-align: center;
-
   font-family: Georgia, "Times New Roman", serif;
-
   color: #7c4a45;
 }
 
@@ -1159,17 +1054,12 @@ body {
 .empty-recipe-placeholder {
   width: 150px;
   height: 120px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   background: #fffaf2;
-
   border: 2px dashed #c99f7c;
-
   box-shadow: 0 4px 10px rgba(90, 60, 40, 0.08);
-
   transform: rotate(2deg);
 }
 
@@ -1183,30 +1073,18 @@ body {
 /* ============================== Empty Recipe Memo ============================== */
 
 .empty-recipe-memo {
-  display: flex;
-  flex-direction: column;
+  width: 90%;
+  margin-top: 5px;
+  padding: 6px 7px;
+}
 
-  gap: 4px;
+.empty-recipe-memo strong {
+  font-size: 12px;
+}
 
-  width: 85%;
-
-  margin-top: 16px;
-  padding: 12px 14px;
-
-  box-sizing: border-box;
-
-  background: #fff4ed;
-
-  border: 2px solid #edb6a8;
-  border-radius: 12px;
-
-  color: #541906;
-
-  font-family: Georgia, "Times New Roman", serif;
-
-  transform: rotate(-2deg);
-
-  box-shadow: 0 4px 10px rgba(120, 70, 50, 0.08);
+.empty-recipe-memo span {
+  font-size: 10px;
+  line-height: 1.15;
 }
 
 .empty-recipe-memo strong {
@@ -1219,17 +1097,14 @@ body {
 }
 
 /* ============================== Scrapbook Navigation ============================== */
-
 /* ========================================
    SCRAPBOOK PAGE TURNING NAVIGATION
 ======================================== */
-
 /*
    The navigation sits ON TOP of the scrapbook
    so the arrows can be used to flip through
    the recipe book.
 */
-
 /* ========================================
    SCRAPBOOK PAGE TURNING NAVIGATION
 ======================================== */
@@ -1239,12 +1114,10 @@ body {
   left: 50%;
   bottom: -25px;
   transform: translateX(-50%);
-
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-
   z-index: 50;
 }
 
@@ -1253,30 +1126,19 @@ body {
 .book-page-arrow {
   position: relative;
   z-index: 21;
-
   width: 90px;
   height: 52px;
-
   display: flex;
-
   align-items: center;
   justify-content: center;
-
   padding: 0;
-
   background: transparent;
-
   border: 2px solid #2f2926;
-
   color: #2f2926;
-
   font-family: Georgia, "Times New Roman", serif;
-
   font-size: 19px;
   letter-spacing: 1px;
-
   cursor: pointer;
-
   transition:
     transform 0.2s ease,
     background 0.2s ease;
@@ -1298,9 +1160,7 @@ body {
 
 .book-page-arrow span {
   font-family: Georgia, "Times New Roman", serif;
-
   font-size: 30px;
-
   line-height: 1;
 }
 
@@ -1308,13 +1168,9 @@ body {
 
 .recipe-book-page-number {
   min-width: 55px;
-
   text-align: center;
-
   color: #2f2926;
-
   font-family: Georgia, "Times New Roman", serif;
-
   font-size: 19px;
 }
 
@@ -1322,7 +1178,6 @@ body {
 
 .book-page-arrow:not(:disabled):hover {
   background: rgba(124, 74, 69, 0.08);
-
   transform: translateY(-2px);
 }
 
@@ -1330,16 +1185,13 @@ body {
 
 .book-page-arrow:disabled {
   opacity: 0.3;
-
   cursor: default;
-
   transform: none;
 }
 
 /* ========================================
    RECIPES BELOW THE SCRAPBOOK
 ======================================== */
-
 /*
    Kept from the original Recipe Book CSS.
    These styles are separate from the open scrapbook.
@@ -1351,31 +1203,20 @@ body {
 
 .recipe-book-list {
   background: #fff8f6 !important;
-
   padding: 18px !important;
-
   margin-bottom: 18px !important;
-
   border-radius: 24px !important;
-
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
-
   border: 1px solid rgba(255, 255, 255, 0.6) !important;
-
   box-sizing: border-box;
 }
 
 .recipe-book-list h3 {
   display: flex;
-
   align-items: center;
-
   gap: 10px;
-
   margin: 0 !important;
-
   color: #7c4a45 !important;
-
   font-size: 22px !important;
 }
 
@@ -1383,28 +1224,17 @@ body {
 
 .recipe-book-note {
   width: 75%;
-
   margin: 40px auto 0;
-
   padding: 20px;
-
   box-sizing: border-box;
-
   background: #fff4ed;
-
   border: 2px solid #edb6a8;
-
   border-radius: 40%;
-
   color: #79584b;
-
   font-family: Georgia, "Times New Roman", serif;
-
   font-size: 19px;
   line-height: 1.5;
-
   transform: rotate(-2deg);
-
   box-shadow: 0 4px 10px rgba(120, 70, 50, 0.08);
 }
 
@@ -1468,146 +1298,21 @@ body {
    MOBILE
 ======================================== */
 
-@media (max-width: 800px) {
-  .recipe-book-page {
-    padding: 10px 20px 20px;
-  }
-
-  .recipe-book-page > h2 {
-    font-size: 32px !important;
-  }
-
-  .recipe-book-page > input {
-    width: 100% !important;
-  }
-
-  .open-recipe-book {
-    grid-template-columns: 1fr;
-
-    min-height: 1100px;
-
-    background-size: 100% 100%;
-
-    padding: 100px 45px;
-  }
-
-  .recipe-book-left-page {
-    padding: 20px;
-  }
-
-  .recipe-book-right-page {
-    padding: 20px;
-  }
-
-  /* Make the two book pages fill the entire book */
-  .recipe-book-left-page,
-  .recipe-book-right-page {
-    min-height: 900px;
-    box-sizing: border-box;
-  }
-
-  /* Keep the navigation arrows at the bottom of each page */
-  .book-page-arrow {
-    bottom: 25px;
-  }
-
-  .recipe-scrapbook-image {
-    width: 80%;
-  }
-}
-
 /* ============================== Responsive Discover Grid ============================== */
 
 /* Medium screens */
-@media (max-width: 1000px) {
-  .discover-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-  }
-}
 
-/* Small screens */
-@media (max-width: 700px) {
-  .discover-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
+/* ========================================
+   RESPONSIVE CONTENT
+======================================== */
 
 /* ========================================
    SIDEBAR + PAGE RESPONSIVENESS
 ======================================== */
 
 /* Medium screens */
-@media (max-width: 1000px) {
-  .sidebar {
-    flex-basis: 200px;
-    width: 200px;
-    min-width: 200px;
-  }
-
-  .sidebar-open {
-    flex-basis: 200px;
-    width: 200px;
-    min-width: 200px;
-  }
-
-  .sidebar-collapsed {
-    flex-basis: 64px;
-    width: 64px;
-    min-width: 64px;
-  }
-
-  .page-wrapper {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-    max-width: none;
-
-    /* NO outside margin */
-    margin: 0;
-
-    padding: 30px 25px;
-  }
-}
 
 /* Small screens */
-@media (max-width: 700px) {
-  .sidebar {
-    flex-basis: 64px;
-    width: 64px;
-    min-width: 64px;
-
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-
-  .sidebar-open {
-    flex-basis: 200px;
-    width: 200px;
-    min-width: 200px;
-  }
-
-  .sidebar-collapsed {
-    flex-basis: 64px;
-    width: 64px;
-    min-width: 64px;
-  }
-
-  .page-wrapper {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-    max-width: none;
-
-    /* Stay attached to the sidebar */
-    margin: 0;
-
-    padding: 25px 15px;
-
-    border-radius: 24px;
-  }
-}
 
 /* ============================== Planner Page ============================== */
 
@@ -1989,29 +1694,6 @@ body {
    MOBILE RANDOMIZER
 ======================================== */
 
-@media (max-width: 700px) {
-  .planner-randomizer {
-    padding: 20px;
-    margin-top: 25px;
-  }
-
-  .planner-random-result {
-    flex-direction: column;
-  }
-
-  .planner-random-image {
-    width: 180px;
-    height: 130px;
-  }
-
-  .planner-random-buttons {
-    flex-direction: column;
-  }
-
-  .planner-random-buttons button {
-    width: 100%;
-  }
-}
 /* ============================== Grocery Page ============================== */
 
 .grocery-page {
@@ -2421,22 +2103,17 @@ body {
 .signin-page {
   position: fixed;
   inset: 0;
-
   width: 100vw;
   height: 100vh;
-
   display: flex;
   justify-content: center;
   align-items: center;
-
   padding: 50px 20px;
   box-sizing: border-box;
-
   background-image: url("/images/whimsicle.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-
   overflow: hidden;
   z-index: 5000;
 }
@@ -2454,15 +2131,12 @@ body {
   max-width: 430px;
   padding: 38px 36px;
   box-sizing: border-box;
-
   background: #fffaf7;
   border: 1px solid var(--theme-hover);
   border-radius: 28px;
-
   box-shadow:
     0 10px 30px rgba(100, 70, 45, 0.1),
     0 2px 8px rgba(100, 70, 45, 0.05);
-
   text-align: left;
 }
 
@@ -2551,16 +2225,12 @@ body {
   width: 100%;
   padding: 12px 14px;
   box-sizing: border-box;
-
   background: #fffdfb;
   border: 2px solid var(--theme-hover);
   border-radius: 12px;
-
   color: #4f403a;
   font-size: 15px;
-
   outline: none;
-
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -2580,18 +2250,13 @@ body {
 .signin-button {
   width: 100%;
   padding: 13px;
-
   border: none;
   border-radius: 14px;
-
   background: var(--theme-accent);
   color: rgb(1, 1, 1);
-
   font-size: 16px;
   font-weight: bold;
-
   cursor: pointer;
-
   transition:
     background 0.2s ease,
     transform 0.2s ease;
@@ -2608,9 +2273,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-
   margin: 24px 0;
-
   color: #a58c84;
   font-size: 13px;
 }
@@ -2632,18 +2295,13 @@ body {
 .signin-create-button {
   width: 100%;
   padding: 12px;
-
   border: 2px solid var(--theme-accent);
   border-radius: 14px;
-
   background: #fff8f6;
   color: var(--theme-accent);
-
   font-size: 15px;
   font-weight: bold;
-
   cursor: pointer;
-
   transition:
     background 0.2s ease,
     border-color 0.2s ease;
@@ -2658,9 +2316,7 @@ body {
 
 .signin-footer {
   margin: 24px 0 0;
-
   text-align: center;
-
   color: #a58c84;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 13px;
@@ -2814,27 +2470,20 @@ section > h1 {
   position: fixed;
   inset: 0;
   z-index: 2000;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 30px;
-
   background: rgba(0, 0, 0, 0.55);
 }
 
 .wallpaper-modal {
   width: min(900px, 90vw);
   max-height: 90vh;
-
   overflow-y: auto;
-
   padding: 24px;
-
   background: #fffaf7;
   border-radius: 22px;
-
   text-align: center;
 }
 
@@ -2846,18 +2495,14 @@ section > h1 {
 
 .wallpaper-preview {
   display: block;
-
   width: 100%;
   max-height: 60vh;
-
   object-fit: cover;
-
   border-radius: 14px;
 }
 
 .wallpaper-modal p {
   margin: 18px 0;
-
   color: #6b4a4a;
   font-size: 16px;
 }
@@ -2875,14 +2520,10 @@ section > h1 {
 .wallpaper-modal-buttons button {
   border: none;
   border-radius: 12px;
-
   padding: 12px 20px;
-
   font-size: 15px;
   font-weight: bold;
-
   cursor: pointer;
-
   transition: 0.2s ease;
 }
 
@@ -2906,9 +2547,7 @@ section > h1 {
 
 .wallpaper-note {
   margin: 10px 0 0 4px;
-
   font-size: 14px;
-
   color: #6b4a4a;
 }
 
@@ -3278,4 +2917,308 @@ section > h1 {
 .theme-cancel-button:hover,
 .theme-confirm-button:hover {
   transform: translateY(-1px);
+}
+
+/* ========================================
+   MOBILE SIDEBAR - FINAL FIX
+======================================== */
+
+/* ========================================
+   RESPONSIVE LAYOUT - THREE SIZE CATEGORIES
+   LARGE = PC (1001px and up)
+   MEDIUM = TABLET (701px - 1000px)
+   SMALL = PHONE (700px and below)
+   ======================================== */
+
+/* ========================================
+   LARGE - PC
+   ======================================== */
+@media (min-width: 1001px) {
+  /* Show the first eight ingredients on the scrapbook page. */
+  .recipe-book-ingredients li:nth-child(n + 9) {
+    display: none;
+  }
+}
+
+/* ========================================
+   MEDIUM - TABLET
+   ======================================== */
+@media (min-width: 701px) and (max-width: 1000px) {
+  /* ============================== Discover ============================== */
+  .discover-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* ============================== Sidebar + Page ============================== */
+  .sidebar {
+    flex-basis: 200px;
+    width: 200px;
+    min-width: 200px;
+  }
+  .sidebar-open {
+    flex-basis: 200px;
+    width: 200px;
+    min-width: 200px;
+  }
+  .sidebar-collapsed {
+    flex-basis: 64px;
+    width: 64px;
+    min-width: 64px;
+  }
+  .page-wrapper {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 30px 25px;
+  }
+
+  /* ============================== Recipe Book ============================== */
+  .recipe-book-page {
+    padding: 10px 20px 20px;
+  }
+  .recipe-book-page > h2 {
+    font-size: 32px !important;
+  }
+  .recipe-book-page > input {
+    width: 100% !important;
+  }
+  .open-recipe-book {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 1536 / 1080;
+    background-size: contain;
+    background-position: center top;
+    padding: 70px 30px 45px;
+    box-sizing: border-box;
+  }
+  .recipe-book-left-page {
+    padding: 8px 12px 20px 8px;
+  }
+  .recipe-book-right-page {
+    padding: 8px 8px 20px 12px;
+  }
+  .recipe-book-left-page,
+  .recipe-book-right-page {
+    min-height: 0;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+  .empty-recipe-page {
+    justify-content: flex-start;
+    padding-top: 0;
+  }
+  .empty-recipe-placeholder {
+    width: 90px;
+    height: 70px;
+    flex-shrink: 0;
+  }
+  .empty-recipe-emoji {
+    font-size: 34px;
+  }
+  .book-page-arrow {
+    bottom: 25px;
+  }
+  .recipe-scrapbook-image {
+    width: 80%;
+  }
+  .recipe-book-section-title,
+  .recipe-book-ingredients,
+  .recipe-book-recipe-slot button {
+    display: none;
+  }
+}
+
+/* ========================================
+   SMALL - PHONE
+   ======================================== */
+@media (max-width: 700px) {
+  /* ============================== Discover ============================== */
+  .discover-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  /* ============================== Home ============================== */
+  .home-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    min-width: 0;
+    width: 100%;
+  }
+  .featured-section,
+  .planned-meals-section,
+  .planned-meals-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .planned-meal-row {
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  /* ============================== Grocery ============================== */
+  .grocery-page {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .grocery-add-area {
+    width: 100%;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .grocery-add-input,
+  .grocery-add-button {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .grocery-list-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* ============================== New Recipe ============================== */
+  .new-recipe-page input[type="file"] {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ============================== Sidebar + Page ============================== */
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 64px !important;
+    min-width: 64px !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    padding-left: 10px;
+    padding-right: 10px;
+    z-index: 1000;
+  }
+  .sidebar-open {
+    width: 200px !important;
+    min-width: 200px !important;
+  }
+  .sidebar-collapsed {
+    width: 64px !important;
+    min-width: 64px !important;
+  }
+  .app-layout {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .page-wrapper {
+    width: calc(100% - 64px) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 0 0 64px !important;
+    padding: 25px 15px !important;
+    border-radius: 24px;
+  }
+  .sidebar-open ~ .page-wrapper {
+    width: calc(100% - 200px) !important;
+    margin-left: 200px !important;
+  }
+
+  /* ============================== Planner Randomizer ============================== */
+  .planner-randomizer {
+    padding: 20px;
+    margin-top: 25px;
+  }
+  .planner-random-result {
+    flex-direction: column;
+  }
+  .planner-random-image {
+    width: 180px;
+    height: 130px;
+  }
+  .planner-random-buttons {
+    flex-direction: column;
+  }
+  .planner-random-buttons button {
+    width: 100%;
+  }
+
+  /* ============================== Recipe Book ============================== */
+  .recipe-book-page {
+    padding: 10px 20px 20px;
+  }
+  .recipe-book-page > h2 {
+    font-size: 32px !important;
+  }
+  .recipe-book-page > input {
+    width: 100% !important;
+  }
+  .open-recipe-book {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 1536 / 1080;
+    background-size: contain;
+    background-position: center top;
+    padding: 70px 30px 45px;
+    box-sizing: border-box;
+  }
+  .recipe-book-left-page {
+    padding: 8px 12px 20px 8px;
+  }
+  .recipe-book-right-page {
+    padding: 8px 8px 20px 12px;
+  }
+  .recipe-book-left-page,
+  .recipe-book-right-page {
+    min-height: 0;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  .recipe-book-recipe-title,
+  .recipe-book-section-title,
+  .recipe-book-ingredients,
+  .recipe-book-recipe-slot button {
+    display: none;
+  }
+  .recipe-book-recipe-title {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+  .empty-recipe-page {
+    justify-content: flex-start;
+    padding-top: 0;
+    transform: translateY(-25px) scale(0.72);
+    transform-origin: top center;
+    width: 138%;
+    margin-left: -19%;
+  }
+  .empty-recipe-placeholder {
+    width: 90px;
+    height: 70px;
+    flex-shrink: 0;
+  }
+  .empty-recipe-emoji {
+    font-size: 34px;
+  }
+  .book-page-arrow {
+    bottom: 25px;
+  }
+  .recipe-scrapbook-image {
+    width: 65%;
+    max-width: 180px;
+    max-height: 140px;
+  }
 }

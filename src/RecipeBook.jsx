@@ -80,7 +80,19 @@ export default function RecipeBook({ recipeSearch, setRecipeSearch, filtered, sc
     // ============================== Real Recipe ==============================
 
     return (
-      <div className={`recipe-book-recipe-slot ${(recipe.ingredients || []).length > 9 ? "recipe-book-recipe-slot-compact" : ""}`}>
+      <div
+        className={`recipe-book-recipe-slot ${(recipe.ingredients || []).length > 9 ? "recipe-book-recipe-slot-compact" : ""}`}
+        onClick={() => setActiveRecipe(recipe)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setActiveRecipe(recipe);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Open ${recipe.name}`}
+      >
         <h2 className="recipe-book-recipe-title">{recipe.name}</h2>
 
         {/* ============================== Recipe Photo ============================== */}
