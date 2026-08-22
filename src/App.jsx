@@ -53,11 +53,100 @@ export default function App() {
   const [addedRecipes, setAddedRecipes] = useState({});
   // Store the recipe currently being displayed in the recipe popup.
   const [activeRecipe, setActiveRecipe] = useState(null);
+  const [recipeZoom, setRecipeZoom] = useState(1);
+  const recipeModalRef = useRef(null);
+  const recipeZoomAreaRef = useRef(null);
+  const pinchDistanceRef = useRef(null);
+  const pinchZoomRef = useRef(1);
+  const recipeZoomValueRef = useRef(1);
   const [popupOpen, setPopupOpen] = useState(false);
   useEffect(() => {
     if (!activeRecipe) {
       setPlannerSearch("");
     }
+  }, [activeRecipe]);
+  useEffect(() => {
+    if (!activeRecipe) return;
+
+    const handleOutsideClick = (event) => {
+      if (recipeModalRef.current && !recipeModalRef.current.contains(event.target)) {
+        setActiveRecipe(null);
+        setPlannerSearch("");
+        setRecipeZoom(1);
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsideClick);
+    };
+  }, [activeRecipe]);
+
+  // ============================== Recipe Zoom ==============================
+  // Zoom is active only while a recipe card is open.
+  // PC: Ctrl + mouse wheel or the on-card +/- buttons.
+  // Touchscreen/phone/tablet: pinch with two fingers.
+  useEffect(() => {
+    recipeZoomValueRef.current = recipeZoom;
+  }, [recipeZoom]);
+
+  useEffect(() => {
+    const element = recipeZoomAreaRef.current;
+
+    if (!activeRecipe || !element) return;
+
+    const getTouchDistance = (touches) => {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const handleWheel = (event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+
+      event.preventDefault();
+
+      const change = event.deltaY < 0 ? 0.1 : -0.1;
+
+      setRecipeZoom((zoom) => Math.min(2, Math.max(1, Number((zoom + change).toFixed(2)))));
+    };
+
+    const handleTouchStart = (event) => {
+      if (event.touches.length === 2) {
+        pinchDistanceRef.current = getTouchDistance(event.touches);
+        pinchZoomRef.current = recipeZoomValueRef.current;
+      }
+    };
+
+    const handleTouchMove = (event) => {
+      if (event.touches.length !== 2 || pinchDistanceRef.current === null) return;
+
+      event.preventDefault();
+
+      const currentDistance = getTouchDistance(event.touches);
+      const scale = currentDistance / pinchDistanceRef.current;
+
+      setRecipeZoom(Math.min(2, Math.max(1, Number((pinchZoomRef.current * scale).toFixed(2)))));
+    };
+
+    const handleTouchEnd = () => {
+      pinchDistanceRef.current = null;
+    };
+
+    element.addEventListener("wheel", handleWheel, { passive: false });
+    element.addEventListener("touchstart", handleTouchStart, { passive: false });
+    element.addEventListener("touchmove", handleTouchMove, { passive: false });
+    element.addEventListener("touchend", handleTouchEnd);
+    element.addEventListener("touchcancel", handleTouchEnd);
+
+    return () => {
+      element.removeEventListener("wheel", handleWheel);
+      element.removeEventListener("touchstart", handleTouchStart);
+      element.removeEventListener("touchmove", handleTouchMove);
+      element.removeEventListener("touchend", handleTouchEnd);
+      element.removeEventListener("touchcancel", handleTouchEnd);
+    };
   }, [activeRecipe]);
   const [showImages, setShowImages] = useState({});
   const [ingredientPaste, setIngredientPaste] = useState("");
@@ -82,6 +171,7 @@ export default function App() {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
   const [manualGroceryItem, setManualGroceryItem] = useState("");
   // Load the saved grocery list from the browser when the app starts.
   const [groceryList, setGroceryList] = useState(() => {
@@ -989,191 +1079,225 @@ export default function App() {
           onClick={() => {
             setActiveRecipe(null);
             setPlannerSearch("");
+            setRecipeZoom(1);
           }}
-          style={{ left: sidebarOpen ? 270 : 0 }}
         >
-          <article className="recipe-modal" onClick={(e) => e.stopPropagation()}>
+          <article
+            ref={recipeModalRef}
+            className="recipe-modal"
+            onClick={(e) => {
+              e.stopPropagation();
+
+              if (e.target === e.currentTarget || e.target === recipeZoomAreaRef.current) {
+                setActiveRecipe(null);
+                setPlannerSearch("");
+                setRecipeZoom(1);
+              }
+            }}
+          >
             <button
               className="recipe-modal-close"
               onClick={() => {
                 setActiveRecipe(null);
                 setPlannerSearch("");
+                setRecipeZoom(1);
               }}
             >
               ✖
             </button>
 
-            <button className="recipe-action recipe-action-delete" onClick={() => deleteRecipe(activeRecipe)}>
-              🗑 Delete Recipe
-            </button>
+            <div className="recipe-zoom-controls">
+              <button type="button" onClick={() => setRecipeZoom((zoom) => Math.max(1, Number((zoom - 0.1).toFixed(2))))} aria-label="Zoom out">
+                −
+              </button>
 
-            <button
-              className="recipe-action recipe-action-edit"
-              onClick={() => {
-                const safeRecipe = {
-                  name: activeRecipe.name || "",
-                  image: activeRecipe.image || "",
-                  category: activeRecipe.category || "",
-                  favorite: activeRecipe.favorite || false,
+              <span>{Math.round(recipeZoom * 100)}%</span>
 
-                  ingredients: Array.isArray(activeRecipe.ingredients)
-                    ? [...activeRecipe.ingredients]
-                    : typeof activeRecipe.ingredients === "string"
-                      ? activeRecipe.ingredients.split("\n").filter(Boolean)
-                      : [""],
+              <button type="button" onClick={() => setRecipeZoom((zoom) => Math.min(2, Number((zoom + 0.1).toFixed(2))))} aria-label="Zoom in">
+                +
+              </button>
+            </div>
 
-                  instructions: Array.isArray(activeRecipe.instructions)
-                    ? [...activeRecipe.instructions]
-                    : typeof activeRecipe.instructions === "string"
-                      ? activeRecipe.instructions.split("\n").filter(Boolean)
-                      : [""],
+            <div ref={recipeZoomAreaRef} className="recipe-modal-content" style={{ zoom: recipeZoom }}>
+              <button className="recipe-action recipe-action-delete" onClick={() => deleteRecipe(activeRecipe)}>
+                🗑 Delete Recipe
+              </button>
 
-                  imageIngredients: activeRecipe.imageIngredients || [],
-
-                  imageInstructions: activeRecipe.imageInstructions || [],
-                };
-
-                setNewRecipe(safeRecipe);
-
-                const index = recipes.findIndex((r) => r.id === activeRecipe.id);
-
-                setEditIndex(index);
-
-                setActiveRecipe(null);
-
-                setTimeout(() => {
-                  setPage("new");
-                }, 0);
-              }}
-            >
-              ✏️ Edit
-            </button>
-
-            <h2 className="recipe-modal-title">{activeRecipe.name}</h2>
-
-            {activeRecipe.image && (
-              <div className="recipe-modal-image">
-                <img src={activeRecipe.image} alt={activeRecipe.name} />
-              </div>
-            )}
-
-            <section className="recipe-planner-section">
-              <strong>📅 Add to Planner:</strong>
-
-              <div className="planner-day-buttons">
-                {Object.keys(weeklyPlan || {}).map((day) => {
-                  const alreadyAdded = (weeklyPlan[day] || []).some((r) => r.name === activeRecipe.name);
-
-                  return (
-                    <button
-                      key={day}
-                      onClick={() => {
-                        assignToDay(day, activeRecipe);
-
-                        setPlannerFeedback(day);
-
-                        window.clearTimeout(window.plannerTimeout);
-
-                        window.plannerTimeout = setTimeout(() => {
-                          setPlannerFeedback("");
-                        }, 2000);
-                      }}
-                      className="planner-day-button"
-                    >
-                      {plannerFeedback === day ? `✔ ${day}` : day}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {!activeRecipe?.id && !recipes.some((recipe) => recipe.name === activeRecipe.name) && (
               <button
-                className="recipe-action recipe-action-save"
-                onClick={async () => {
-                  if (!user) return;
-
-                  const recipeToSave = {
-                    user_id: user.id,
+                className="recipe-action recipe-action-edit"
+                onClick={() => {
+                  const safeRecipe = {
                     name: activeRecipe.name || "",
-                    ingredients: JSON.stringify(activeRecipe.ingredients || []),
-                    instructions: JSON.stringify(activeRecipe.instructions || []),
+                    image: activeRecipe.image || "",
                     category: activeRecipe.category || "",
                     favorite: activeRecipe.favorite || false,
-                    image: activeRecipe.image || "",
+
+                    ingredients: Array.isArray(activeRecipe.ingredients)
+                      ? [...activeRecipe.ingredients]
+                      : typeof activeRecipe.ingredients === "string"
+                        ? activeRecipe.ingredients.split("\n").filter(Boolean)
+                        : [""],
+
+                    instructions: Array.isArray(activeRecipe.instructions)
+                      ? [...activeRecipe.instructions]
+                      : typeof activeRecipe.instructions === "string"
+                        ? activeRecipe.instructions.split("\n").filter(Boolean)
+                        : [""],
+
+                    imageIngredients: activeRecipe.imageIngredients || [],
+
+                    imageInstructions: activeRecipe.imageInstructions || [],
                   };
 
-                  const { data, error } = await supabase.from("recipes").insert([recipeToSave]).select().single();
+                  setNewRecipe(safeRecipe);
 
-                  if (error) {
-                    console.error("Error adding recipe:", error);
-                    alert("There was a problem saving this recipe.");
-                    return;
-                  }
+                  const index = recipes.findIndex((r) => r.id === activeRecipe.id);
 
-                  const savedRecipe = formatSavedRecipe(data);
-                  setRecipes((prev) => [...prev, savedRecipe]);
-                  setActiveRecipe(savedRecipe);
-                  setRecipeAdded(true);
+                  setEditIndex(index);
+
+                  setActiveRecipe(null);
 
                   setTimeout(() => {
-                    setRecipeAdded(false);
+                    setPage("new");
+                  }, 0);
+                }}
+              >
+                ✏️ Edit
+              </button>
+
+              <h2 className="recipe-modal-title">{activeRecipe.name}</h2>
+
+              {activeRecipe.image && (
+                <div className="recipe-modal-image">
+                  <img src={activeRecipe.image} alt={activeRecipe.name} />
+                </div>
+              )}
+
+              <p className="recipe-zoom-note">
+                <strong>
+                  🔍 Need to read this recipe better? PC: hold Ctrl and scroll to zoom. Touchscreen, phone, or tablet: pinch with two fingers. You can
+                  also use + and − above.
+                </strong>
+              </p>
+
+              <section className="recipe-planner-section">
+                <strong>📅 Add to Planner:</strong>
+
+                <div className="planner-day-buttons">
+                  {Object.keys(weeklyPlan || {}).map((day) => {
+                    const alreadyAdded = (weeklyPlan[day] || []).some((r) => r.name === activeRecipe.name);
+
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => {
+                          assignToDay(day, activeRecipe);
+
+                          setPlannerFeedback(day);
+
+                          window.clearTimeout(window.plannerTimeout);
+
+                          window.plannerTimeout = setTimeout(() => {
+                            setPlannerFeedback("");
+                          }, 2000);
+                        }}
+                        className="planner-day-button"
+                      >
+                        {plannerFeedback === day ? `✔ ${day}` : day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {!activeRecipe?.id && !recipes.some((recipe) => recipe.name === activeRecipe.name) && (
+                <button
+                  className="recipe-action recipe-action-save"
+                  onClick={async () => {
+                    if (!user) return;
+
+                    const recipeToSave = {
+                      user_id: user.id,
+                      name: activeRecipe.name || "",
+                      ingredients: JSON.stringify(activeRecipe.ingredients || []),
+                      instructions: JSON.stringify(activeRecipe.instructions || []),
+                      category: activeRecipe.category || "",
+                      favorite: activeRecipe.favorite || false,
+                      image: activeRecipe.image || "",
+                    };
+
+                    const { data, error } = await supabase.from("recipes").insert([recipeToSave]).select().single();
+
+                    if (error) {
+                      console.error("Error adding recipe:", error);
+                      alert("There was a problem saving this recipe.");
+                      return;
+                    }
+
+                    const savedRecipe = formatSavedRecipe(data);
+                    setRecipes((prev) => [...prev, savedRecipe]);
+                    setActiveRecipe(savedRecipe);
+                    setRecipeAdded(true);
+
+                    setTimeout(() => {
+                      setRecipeAdded(false);
+                    }, 2000);
+                  }}
+                >
+                  {recipeAdded ? "✅ Added to My Recipes!" : "➕ Add to My Recipes"}
+                </button>
+              )}
+
+              <button
+                className="recipe-action recipe-action-grocery"
+                onClick={() => {
+                  const selected = Object.keys(selectedItems).filter((item) => selectedItems[item]);
+
+                  const updated = [...new Set([...groceryList, ...selected])];
+
+                  setGroceryList(updated);
+                  localStorage.setItem("groceryList", JSON.stringify(updated));
+
+                  setSelectedItems({});
+                  setGroceryAdded(true);
+
+                  setTimeout(() => {
+                    setGroceryAdded(false);
                   }, 2000);
                 }}
               >
-                {recipeAdded ? "✅ Added to My Recipes!" : "➕ Add to My Recipes"}
+                {groceryAdded ? "✅ Added to Grocery List!" : "➕ Add Selected Ingredients"}
               </button>
-            )}
 
-            <button
-              className="recipe-action recipe-action-grocery"
-              onClick={() => {
-                const selected = Object.keys(selectedItems).filter((item) => selectedItems[item]);
+              <section className="recipe-ingredients">
+                <strong>Ingredients:</strong>
+                {(Array.isArray(activeRecipe.ingredients) ? activeRecipe.ingredients : []).map((item, i) => (
+                  <div key={i}>
+                    <input
+                      type="checkbox"
+                      checked={selectedItems[item] || false}
+                      onChange={() =>
+                        setSelectedItems((prev) => ({
+                          ...prev,
+                          [item]: !prev[item],
+                        }))
+                      }
+                    />
 
-                const updated = [...new Set([...groceryList, ...selected])];
+                    <span>• {item}</span>
+                  </div>
+                ))}
+              </section>
 
-                setGroceryList(updated);
-                localStorage.setItem("groceryList", JSON.stringify(updated));
-
-                setSelectedItems({});
-                setGroceryAdded(true);
-
-                setTimeout(() => {
-                  setGroceryAdded(false);
-                }, 2000);
-              }}
-            >
-              {groceryAdded ? "✅ Added to Grocery List!" : "➕ Add Selected Ingredients"}
-            </button>
-
-            <section className="recipe-ingredients">
-              <strong>Ingredients:</strong>
-              {(Array.isArray(activeRecipe.ingredients) ? activeRecipe.ingredients : []).map((item, i) => (
-                <div key={i}>
-                  <input
-                    type="checkbox"
-                    checked={selectedItems[item] || false}
-                    onChange={() =>
-                      setSelectedItems((prev) => ({
-                        ...prev,
-                        [item]: !prev[item],
-                      }))
-                    }
-                  />
-
-                  <span>• {item}</span>
-                </div>
-              ))}
-            </section>
-
-            <section className="recipe-instructions">
-              <strong>Instructions:</strong>
-              {(Array.isArray(activeRecipe.instructions) ? activeRecipe.instructions : activeRecipe.instructions?.split("\n") || []).map(
-                (step, i) => (
-                  <div key={i}>{step}</div>
-                ),
-              )}
-            </section>
+              <section className="recipe-instructions">
+                <strong>Instructions:</strong>
+                {(Array.isArray(activeRecipe.instructions) ? activeRecipe.instructions : activeRecipe.instructions?.split("\n") || []).map(
+                  (step, i) => (
+                    <div key={i}>{step}</div>
+                  ),
+                )}
+              </section>
+            </div>
           </article>
         </div>
       )}

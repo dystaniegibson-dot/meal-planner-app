@@ -144,7 +144,51 @@ export default function RecipeBook({ recipeSearch, setRecipeSearch, filtered, sc
         value={recipeSearch}
         onChange={(e) => setRecipeSearch(e.target.value)} // Update the recipe search.
       />
+      {/* ============================== Mobile Recipe Notes ============================== */}
 
+      <div className="mobile-recipe-book">
+        {bookRecipes.length > 0 ? (
+          bookRecipes.map((recipe) => (
+            <article
+              key={recipe.id || recipe.name}
+              className="mobile-recipe-note"
+              onClick={() => setActiveRecipe(recipe)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setActiveRecipe(recipe);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open ${recipe.name}`}
+            >
+              <h2 className="mobile-recipe-note-title">{recipe.name}</h2>
+
+              {getRecipeImage(recipe) ? (
+                <img src={getRecipeImage(recipe)} alt={recipe.name} className="mobile-recipe-note-image" />
+              ) : (
+                <div className="mobile-recipe-note-placeholder">
+                  <span>{placeholderChoices[Math.floor(Math.random() * placeholderChoices.length)].emoji}</span>
+                </div>
+              )}
+              {recipe.ingredients?.length > 0 && (
+                <div className="mobile-recipe-note-ingredients">
+                  <strong>Ingredients:</strong>
+
+                  <ul>
+                    {recipe.ingredients.slice(0, 3).map((ingredient, index) => (
+                      <li key={index}>{ingredient}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </article>
+          ))
+        ) : (
+          <div className="mobile-recipe-note-empty">No recipes found.</div>
+        )}
+      </div>
       {/* ============================== Open Scrapbook ============================== */}
 
       <div className="open-recipe-book">
