@@ -1,8 +1,14 @@
 import { useState } from "react";
+
 // ============================== Sign In ==============================
 
 export default function SignIn({ email, setEmail, password, setPassword, signIn, signUp, resetPassword }) {
+  // Controls whether we are showing the Sign In form
+  // or the Create Account form.
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
+
   return (
     <main className="signin-page">
       {/* ============================== Sign In Card ============================== */}
@@ -15,9 +21,13 @@ export default function SignIn({ email, setEmail, password, setPassword, signIn,
 
           <h1 className="signin-title">Cozy Recipe Book</h1>
 
-          <p className="signin-welcome">Welcome back!</p>
+          <p className="signin-welcome">{isCreatingAccount ? "Create Your Account" : "Welcome back!"}</p>
 
-          <p className="signin-subtitle">Sign in to continue to your recipes, planner, and grocery list.</p>
+          <p className="signin-subtitle">
+            {isCreatingAccount
+              ? "Enter your email and create a password to get started."
+              : "Sign in to continue to your recipes, planner, and grocery list."}
+          </p>
         </div>
 
         {/* ============================== Email ============================== */}
@@ -41,34 +51,42 @@ export default function SignIn({ email, setEmail, password, setPassword, signIn,
           <div className="signin-password-label">
             <label htmlFor="signin-password">Password</label>
 
-            <button type="button" className="signin-forgot-button" onClick={resetPassword}>
-              Forgot password?
-            </button>
+            {/* Forgot password only appears when signing in. */}
+            {!isCreatingAccount && (
+              <button type="button" className="signin-forgot-button" onClick={resetPassword}>
+                Forgot password?
+              </button>
+            )}
           </div>
 
           <input
             id="signin-password"
             type={showPassword ? "text" : "password"}
-            placeholder="Enter your password"
+            placeholder={isCreatingAccount ? "Create a password" : "Enter your password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                signIn();
+                if (isCreatingAccount) {
+                  signUp();
+                } else {
+                  signIn();
+                }
               }
             }}
-            autoComplete="current-password"
+            autoComplete={isCreatingAccount ? "new-password" : "current-password"}
           />
+
           <label className="show-password-option">
             <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
             Show password
           </label>
         </div>
 
-        {/* ============================== Sign In ============================== */}
+        {/* ============================== Main Action ============================== */}
 
-        <button type="button" className="signin-button" onClick={signIn}>
-          Sign In
+        <button type="button" className="signin-button" onClick={isCreatingAccount ? signUp : signIn}>
+          {isCreatingAccount ? "Create Account" : "Sign In"}
         </button>
 
         {/* ============================== Divider ============================== */}
@@ -77,11 +95,31 @@ export default function SignIn({ email, setEmail, password, setPassword, signIn,
           <span>or</span>
         </div>
 
-        {/* ============================== Create Account ============================== */}
+        {/* ============================== Account Mode Switch ============================== */}
 
-        <button type="button" className="signin-create-button" onClick={signUp}>
-          Create Account
-        </button>
+        {isCreatingAccount ? (
+          <button
+            type="button"
+            className="signin-create-button"
+            onClick={() => {
+              setIsCreatingAccount(false);
+              setShowPassword(false);
+            }}
+          >
+            Already have an account? Sign In
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="signin-create-button"
+            onClick={() => {
+              setIsCreatingAccount(true);
+              setShowPassword(false);
+            }}
+          >
+            Create Account
+          </button>
+        )}
 
         {/* ============================== Footer ============================== */}
 
