@@ -11,6 +11,36 @@ export default function NewRecipe({
   instructionRefs,
   inputRefs,
 }) {
+  // ============================== Add Recipe Items ==============================
+
+  // Add a new ingredient and immediately move focus to it.
+  const addIngredient = () => {
+    const nextIndex = newRecipe.ingredients.length;
+
+    setNewRecipe((prev) => ({
+      ...prev,
+      ingredients: [...prev.ingredients, ""],
+    }));
+
+    setTimeout(() => {
+      inputRefs.current[nextIndex]?.focus();
+    }, 0);
+  };
+
+  // Add a new instruction and immediately move focus to it.
+  const addInstruction = () => {
+    const nextIndex = newRecipe.instructions.length;
+
+    setNewRecipe((prev) => ({
+      ...prev,
+      instructions: [...prev.instructions, ""],
+    }));
+
+    setTimeout(() => {
+      instructionRefs.current[nextIndex]?.focus();
+    }, 0);
+  };
+
   return (
     <main className="new-recipe-page">
       {/* ============================== Recipe Instructions ============================== */}
@@ -102,20 +132,10 @@ export default function NewRecipe({
                 <input
                   placeholder="Add ingredients here..."
                   onKeyDown={(e) => {
-                    // ENTER → add a new ingredient input.
+                    // ENTER / MOBILE NEXT → add a new ingredient.
                     if (e.key === "Enter") {
                       e.preventDefault();
-
-                      const nextIndex = newRecipe.ingredients.length;
-
-                      setNewRecipe((prev) => ({
-                        ...prev,
-                        ingredients: [...prev.ingredients, ""],
-                      }));
-
-                      setTimeout(() => {
-                        inputRefs.current[nextIndex]?.focus();
-                      }, 0);
+                      addIngredient();
                     }
 
                     // BACKSPACE → delete an empty ingredient, except the first one.
@@ -137,6 +157,7 @@ export default function NewRecipe({
                   }}
                   type="text"
                   value={ing}
+                  enterKeyHint="next"
                   ref={(el) => (inputRefs.current[i] = el)}
                   onChange={(e) => {
                     const updated = [...newRecipe.ingredients];
@@ -166,6 +187,9 @@ export default function NewRecipe({
                 )}
               </div>
             ))}
+            <button type="button" className="add-recipe-item-button" onClick={addIngredient} aria-label="Add ingredient">
+              +
+            </button>
           </div>
 
           {/* ============================== Instructions ============================== */}
@@ -178,6 +202,7 @@ export default function NewRecipe({
                 <input
                   ref={(el) => (instructionRefs.current[i] = el)}
                   type="text"
+                  enterKeyHint="next"
                   value={step}
                   placeholder="Add instructions here..."
                   onKeyDown={(e) => {
@@ -242,6 +267,25 @@ export default function NewRecipe({
                 )}
               </div>
             ))}
+            <button
+              type="button"
+              className="add-recipe-item-button"
+              onClick={() => {
+                const nextIndex = newRecipe.instructions.length;
+
+                setNewRecipe((prev) => ({
+                  ...prev,
+                  instructions: [...prev.instructions, ""],
+                }));
+
+                setTimeout(() => {
+                  instructionRefs.current[nextIndex]?.focus();
+                }, 0);
+              }}
+              aria-label="Add instruction"
+            >
+              +
+            </button>
           </div>
 
           {/* ============================== Recipe Actions ============================== */}

@@ -2985,6 +2985,18 @@ section > h1 {
   .recipe-book-ingredients li:nth-child(n + 9) {
     display: none;
   }
+
+  /* ============================== Sidebar + Page ============================== */
+
+  .page-wrapper {
+    margin: 20px 30px 20px 230px;
+    width: auto;
+    max-width: none;
+  }
+
+  .sidebar-collapsed ~ .page-wrapper {
+    margin-left: 70px;
+  }
 }
 
 /* ========================================
@@ -2998,28 +3010,33 @@ section > h1 {
   }
 
   /* ============================== Sidebar + Page ============================== */
+
   .sidebar {
-    flex-basis: 200px;
     width: 200px;
     min-width: 200px;
   }
+
   .sidebar-open {
-    flex-basis: 200px;
     width: 200px;
     min-width: 200px;
   }
+
   .sidebar-collapsed {
-    flex-basis: 64px;
     width: 64px;
     min-width: 64px;
   }
+
   .page-wrapper {
     flex: 1;
     min-width: 0;
     width: auto;
     max-width: none;
-    margin: 0;
+    margin: 20px 30px 20px 200px;
     padding: 30px 25px;
+  }
+
+  .sidebar-collapsed ~ .page-wrapper {
+    margin-left: 64px;
   }
 
   /* ============================== Recipe Book ============================== */

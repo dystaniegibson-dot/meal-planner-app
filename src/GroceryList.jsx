@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // ============================== Grocery List ==============================
 
@@ -32,6 +32,21 @@ export default function GroceryList({ manualGroceryItem, setManualGroceryItem, g
 
   const [openMenu, setOpenMenu] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  // ============================== Close Menu When Clicking Outside ==============================
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest(".grocery-item-row")) {
+        setOpenMenu(null);
+      }
+    };
+
+    document.addEventListener("click", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, []);
 
   // ============================== Duplicate Message ==============================
 
