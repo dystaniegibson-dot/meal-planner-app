@@ -6,14 +6,20 @@ import { supabase } from "./supabase";
 export default function RecipeScanner({ onSaveRecipe }) {
   // ============================== Scanner State ==============================
 
-  // Stores ALL recipe images selected by the user.
+  // Stores the ORIGINAL images.
+  // These files are NEVER replaced by the crop.
+  // They are the files sent to OCR.
   const [imageFiles, setImageFiles] = useState([]);
 
-  // Stores preview URLs for the selected/cropped images.
+  // Stores previews of the ORIGINAL images.
   const [imagePreviews, setImagePreviews] = useState([]);
 
-  // Tracks which pages have been cropped.
-  const [croppedPages, setCroppedPages] = useState([]);
+  // Stores the SEPARATE cropped copy that will become
+  // the recipe image on the New Recipe page.
+  const [recipeImagePreview, setRecipeImagePreview] = useState("");
+
+  // Tracks whether the recipe image has been cropped.
+  const [isRecipeImageCropped, setIsRecipeImageCropped] = useState(false);
 
   // Stores the recipe returned by Gemini.
   const [recipe, setRecipe] = useState(null);
@@ -53,15 +59,22 @@ export default function RecipeScanner({ onSaveRecipe }) {
 
     if (!selectedFiles.length) return;
 
-    // A new set of images means we need to start the workflow over.
+    // A new image selection means the scan must start over.
     setRecipe(null);
     setErrorMessage("");
-    setCroppedPages([]);
 
-    // Add the newly selected images to the existing images.
+    // Remove any previous cropped recipe image.
+    if (recipeImagePreview) {
+      URL.revokeObjectURL(recipeImagePreview);
+    }
+
+    setRecipeImagePreview("");
+    setIsRecipeImageCropped(false);
+
+    // Add the ORIGINAL files.
     setImageFiles((prev) => [...prev, ...selectedFiles]);
 
-    // Create preview URLs for the newly selected images.
+    // Create previews for the ORIGINAL files.
     const newPreviews = selectedFiles.map((file) => URL.createObjectURL(file));
 
     setImagePreviews((prev) => [...prev, ...newPreviews]);
@@ -80,8 +93,15 @@ export default function RecipeScanner({ onSaveRecipe }) {
 
     setImagePreviews((prev) => prev.filter((_, index) => index !== indexToRemove));
 
-    // Rebuild the cropped-page list after removing an image.
-    setCroppedPages((prev) => prev.filter((index) => index !== indexToRemove).map((index) => (index > indexToRemove ? index - 1 : index)));
+    // The first image is the only image that can be the recipe photo.
+    if (indexToRemove === 0) {
+      if (recipeImagePreview) {
+        URL.revokeObjectURL(recipeImagePreview);
+      }
+
+      setRecipeImagePreview("");
+      setIsRecipeImageCropped(false);
+    }
 
     // If the user removes an image after scanning,
     // clear the old results because the image collection changed.
@@ -92,6 +112,9 @@ export default function RecipeScanner({ onSaveRecipe }) {
   // ============================== Open Crop Editor ==============================
 
   const handleOpenCrop = (index) => {
+    // ONLY the first image is used as the New Recipe image.
+    if (index !== 0) return;
+
     setCropIndex(index);
 
     // Start with most of the image selected.
@@ -174,12 +197,15 @@ export default function RecipeScanner({ onSaveRecipe }) {
     cropDragStart.current = null;
   };
 
-  // ============================== Use Cropped Image ==============================
+  // ============================== Create Cropped Recipe Image ==============================
 
   const handleSaveCroppedImage = () => {
-    if (cropIndex === null || !cropImageRef.current) return;
+    if (cropIndex !== 0 || !cropImageRef.current) return;
 
-    const file = imageFiles[cropIndex];
+    // IMPORTANT:
+    // This is the ORIGINAL file.
+    // We read from it but NEVER replace it.
+    const file = imageFiles[0];
 
     if (!file) return;
 
@@ -190,14 +216,15 @@ export default function RecipeScanner({ onSaveRecipe }) {
 
     const image = cropImageRef.current;
 
-    // Create a canvas to hold only the selected crop.
+    // Create a separate canvas for the recipe photo.
     const canvas = document.createElement("canvas");
 
-    // Convert the percentage crop into the original image's pixels.
     const sourceX = (cropArea.x / 100) * image.naturalWidth;
+
     const sourceY = (cropArea.y / 100) * image.naturalHeight;
 
     const sourceWidth = (cropArea.width / 100) * image.naturalWidth;
+
     const sourceHeight = (cropArea.height / 100) * image.naturalHeight;
 
     canvas.width = Math.round(sourceWidth);
@@ -210,42 +237,38 @@ export default function RecipeScanner({ onSaveRecipe }) {
       return;
     }
 
-    // Draw only the selected portion onto the canvas.
+    // Draw ONLY the selected area onto the separate canvas.
     context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
 
-    // Turn the cropped canvas into a file.
+    // Create the cropped copy.
     canvas.toBlob((blob) => {
       if (!blob) {
         setErrorMessage("Unable to create the cropped image.");
         return;
       }
 
-      // Create a new File from the cropped image.
-      // This replaces the original page image inside the scanner.
-      const croppedFile = new File([blob], `cropped-recipe-page-${cropIndex + 1}.png`, {
+      const croppedFile = new File([blob], "recipe-image-cropped.png", {
         type: "image/png",
       });
 
-      // Create a new preview URL for the cropped image.
+      // Create a preview for the NEW cropped copy.
       const croppedPreview = URL.createObjectURL(croppedFile);
 
-      // Revoke the old preview URL because the original image
-      // is being replaced by the cropped version.
-      URL.revokeObjectURL(imagePreviews[cropIndex]);
+      // Remove the previous cropped recipe image, if one exists.
+      if (recipeImagePreview) {
+        URL.revokeObjectURL(recipeImagePreview);
+      }
 
-      // Replace the original image file with the cropped file.
-      setImageFiles((prev) => prev.map((item, index) => (index === cropIndex ? croppedFile : item)));
+      // IMPORTANT:
+      // We ONLY save the cropped copy here.
+      //
+      // imageFiles[0] remains the ORIGINAL full page.
+      setRecipeImagePreview(croppedPreview);
 
-      // Replace the image preview with the cropped image.
-      setImagePreviews((prev) => prev.map((item, index) => (index === cropIndex ? croppedPreview : item)));
+      setIsRecipeImageCropped(true);
 
-      // Mark this page as cropped.
-      setCroppedPages((prev) => (prev.includes(cropIndex) ? prev : [...prev, cropIndex]));
-
-      // Clear any previous error.
       setErrorMessage("");
 
-      // Close the crop editor.
       handleCloseCrop();
     }, "image/png");
   };
@@ -257,10 +280,6 @@ export default function RecipeScanner({ onSaveRecipe }) {
       const reader = new FileReader();
 
       reader.onload = () => {
-        // FileReader returns:
-        // data:image/jpeg;base64,XXXXXXXX
-        //
-        // Gemini only needs the part AFTER "base64,".
         const base64String = reader.result.split(",")[1];
 
         resolve(base64String);
@@ -280,9 +299,10 @@ export default function RecipeScanner({ onSaveRecipe }) {
       return;
     }
 
-    // Require every selected page to be cropped before scanning.
-    if (croppedPages.length !== imageFiles.length) {
-      setErrorMessage("Please crop each recipe page first. Once every page is cropped, you can scan the recipe.");
+    // The recipe photo must be cropped,
+    // but the crop is NOT used for OCR.
+    if (!isRecipeImageCropped) {
+      setErrorMessage("Please crop the recipe image first.");
       return;
     }
 
@@ -291,7 +311,16 @@ export default function RecipeScanner({ onSaveRecipe }) {
     setRecipe(null);
 
     try {
-      // Convert EVERY cropped image into Base64.
+      // IMPORTANT:
+      //
+      // Send the ORIGINAL imageFiles to OCR.
+      //
+      // This means:
+      // Page 1 = FULL ORIGINAL PAGE
+      // Page 2 = FULL ORIGINAL PAGE
+      // Page 3 = FULL ORIGINAL PAGE
+      //
+      // The crop is NEVER sent in place of page 1.
       const images = await Promise.all(
         imageFiles.map(async (file) => ({
           image: await imageToBase64(file),
@@ -301,7 +330,6 @@ export default function RecipeScanner({ onSaveRecipe }) {
 
       // ============================== Call Supabase ==============================
 
-      // Send ALL cropped recipe pages to the Edge Function together.
       const { data, error } = await supabase.functions.invoke("scan-recipe", {
         body: {
           images,
@@ -337,39 +365,17 @@ export default function RecipeScanner({ onSaveRecipe }) {
   // ============================== Send Recipe to New Recipe ==============================
 
   const handleSendRecipeToNewRecipe = () => {
-    if (!recipe || !onSaveRecipe) return;
+    if (!recipe || !onSaveRecipe || !recipeImagePreview) {
+      return;
+    }
 
-    // The first cropped image becomes the recipe's main photo.
-    // The full set of cropped pages was already used for scanning.
-    const recipeImage = imagePreviews[0] || "";
-
-    // Send BOTH the scanned recipe and the cropped recipe image
-    // to App.jsx.
-    onSaveRecipe(recipe, recipeImage);
-  };
-
-  // ============================== Save Original Recipe Image ==============================
-
-  const handleSaveImage = (index) => {
-    const file = imageFiles[index];
-
-    if (!file) return;
-
-    const imageUrl = URL.createObjectURL(file);
-
-    const link = document.createElement("a");
-
-    link.href = imageUrl;
-
-    link.download = file.name || `recipe-image-${index + 1}.jpg`;
-
-    document.body.appendChild(link);
-
-    link.click();
-
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(imageUrl);
+    // IMPORTANT:
+    //
+    // recipeImagePreview is the CROPPED COPY.
+    //
+    // The OCR recipe was created from the ORIGINAL
+    // full-size imageFiles.
+    onSaveRecipe(recipe, recipeImagePreview);
   };
 
   // ============================== Page ==============================
@@ -401,7 +407,7 @@ export default function RecipeScanner({ onSaveRecipe }) {
           <div>
             <strong>Crop the recipe image you would like to keep.</strong>
 
-            <p>Remove extra background so only the recipe image is visible.</p>
+            <p>Only the first image is cropped for the New Recipe photo. The original full page is still used for scanning.</p>
           </div>
         </div>
 
@@ -411,10 +417,7 @@ export default function RecipeScanner({ onSaveRecipe }) {
           <div>
             <strong>Scan and send to New Recipe</strong>
 
-            <p>
-              After your desired recipe image is cropped, scan the recipe, extract the text, and your text and cropped image will go automatically to
-              new recipe page.
-            </p>
+            <p>The full recipe pages are scanned for ingredients and instructions, while the cropped copy becomes the recipe image.</p>
           </div>
         </div>
       </div>
@@ -438,18 +441,19 @@ export default function RecipeScanner({ onSaveRecipe }) {
           <div className="scanner-image-list">
             {imagePreviews.map((preview, index) => (
               <div className="scanner-image-item" key={`${preview}-${index}`}>
-                {/* Page Number */}
+                {/* ============================== Page Number ============================== */}
 
                 <div className="scanner-image-number">
-                  Page {index + 1}
-                  {croppedPages.includes(index) && <span className="scanner-cropped-status"> ✓ Cropped</span>}
+                  {index === 0 ? "Recipe Image" : `OCR Image ${index + 1}`}
+
+                  {index === 0 && isRecipeImageCropped && <span className="scanner-cropped-status"> ✓ Cropped</span>}
                 </div>
 
-                {/* Image / Crop Editor */}
+                {/* ============================== Image / Crop Editor ============================== */}
 
                 {cropIndex === index ? (
                   <div>
-                    <p className="recipe-crop-instruction">✂️ Drag across the part of the image you want to keep.</p>
+                    <p className="recipe-crop-instruction">✂️ Drag across the part of the image you want to use as the recipe photo.</p>
 
                     <div
                       className="recipe-crop-image-container"
@@ -457,8 +461,27 @@ export default function RecipeScanner({ onSaveRecipe }) {
                       onPointerMove={handleCropPointerMove}
                       onPointerUp={handleCropPointerUp}
                       onPointerCancel={handleCropPointerUp}
+                      style={{
+                        position: "relative",
+                        width: "fit-content",
+                        maxWidth: "100%",
+                        margin: "0 auto",
+                      }}
                     >
-                      <img ref={cropImageRef} src={preview} alt={`Crop recipe page ${index + 1}`} className="recipe-crop-image" draggable="false" />
+                      <img
+                        ref={cropImageRef}
+                        src={preview}
+                        alt="Crop recipe image"
+                        className="recipe-crop-image"
+                        draggable="false"
+                        style={{
+                          display: "block",
+                          maxWidth: "100%",
+                          maxHeight: "70vh",
+                          width: "auto",
+                          height: "auto",
+                        }}
+                      />
 
                       <div
                         className="recipe-crop-selection"
@@ -469,30 +492,59 @@ export default function RecipeScanner({ onSaveRecipe }) {
                           height: `${cropArea.height}%`,
                         }}
                       />
+
+                      {/* ============================== Floating Crop Button ============================== */}
+
+                      {cropArea.width > 1 && cropArea.height > 1 && (
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveCroppedImage();
+                          }}
+                          className="scanner-save-cropped-image-button"
+                          style={{
+                            position: "absolute",
+                            left: `${Math.min(cropArea.x + cropArea.width - 2, 72)}%`,
+                            top: `${Math.min(cropArea.y + cropArea.height + 1, 88)}%`,
+                            zIndex: 10,
+                            minHeight: "44px",
+                            padding: "10px 16px",
+                            borderRadius: "10px",
+                            fontWeight: "600",
+                            whiteSpace: "nowrap",
+                            cursor: "pointer",
+                            touchAction: "manipulation",
+                          }}
+                        >
+                          ✓ Use This Crop
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
-                  <img src={preview} alt={`Recipe page ${index + 1}`} className="scanner-image-preview" />
+                  <img src={preview} alt={index === 0 ? "Recipe image" : `OCR image ${index + 1}`} className="scanner-image-preview" />
                 )}
 
-                {/* Image Actions */}
+                {/* ============================== Image Actions ============================== */}
 
                 <div className="scanner-image-actions">
                   {cropIndex === index ? (
-                    <>
-                      <button type="button" onClick={handleCloseCrop} className="scanner-crop-cancel-button">
-                        Cancel
-                      </button>
-
-                      <button type="button" onClick={handleSaveCroppedImage} className="scanner-save-cropped-image-button">
-                        ✓ Use This Crop
-                      </button>
-                    </>
+                    <button type="button" onClick={handleCloseCrop} className="scanner-crop-cancel-button">
+                      Cancel
+                    </button>
                   ) : (
                     <>
-                      <button type="button" onClick={() => handleOpenCrop(index)} className="scanner-crop-image-button">
-                        ✂️ Crop Image
-                      </button>
+                      {/* ONLY the first image can be cropped. */}
+
+                      {index === 0 && (
+                        <button type="button" onClick={() => handleOpenCrop(index)} className="scanner-crop-image-button">
+                          ✂️ Crop Recipe Image
+                        </button>
+                      )}
 
                       <button type="button" onClick={() => handleRemoveImage(index)} className="scanner-remove-image-button">
                         ✖ Remove
@@ -507,28 +559,23 @@ export default function RecipeScanner({ onSaveRecipe }) {
           {/* ============================== Scan Recipe ============================== */}
 
           <div className="scanner-next-step">
-            {croppedPages.length < imageFiles.length && (
+            {!isRecipeImageCropped && (
               <p className="scanner-step-message">
-                ✂️ <strong>Next:</strong> Crop every recipe page above.
+                ✂️ <strong>Next:</strong> Crop the Recipe Image above.
                 <br />
-                Once all pages show ✓ Cropped, you can scan the recipe.
+                Additional OCR images do not need to be cropped.
               </p>
             )}
 
-            {croppedPages.length === imageFiles.length && (
+            {isRecipeImageCropped && (
               <p className="scanner-step-message scanner-ready-message">
-                ✅ All recipe pages are cropped.
+                ✅ Recipe image is cropped.
                 <br />
-                You're ready to scan the recipe text.
+                The original full pages will be used for OCR.
               </p>
             )}
 
-            <button
-              type="button"
-              onClick={handleScanRecipe}
-              disabled={scanning || croppedPages.length !== imageFiles.length}
-              className="scanner-scan-button"
-            >
+            <button type="button" onClick={handleScanRecipe} disabled={scanning || !isRecipeImageCropped} className="scanner-scan-button">
               {scanning ? "🔍 Scanning Recipe..." : `🔍 Scan ${imageFiles.length} ${imageFiles.length === 1 ? "Page" : "Pages"}`}
             </button>
           </div>
@@ -539,9 +586,9 @@ export default function RecipeScanner({ onSaveRecipe }) {
             <div className="scanner-extract-section">
               <h3>✅ Recipe Text Ready</h3>
 
-              <p>Your recipe text has been extracted and your cropped recipe image is ready.</p>
+              <p>Your recipe text was extracted from the full recipe pages.</p>
 
-              <p>Continue to New Recipe to review and save everything.</p>
+              <p>Your cropped recipe image is ready to use as the recipe photo.</p>
 
               <button type="button" onClick={handleSendRecipeToNewRecipe} className="scanner-save-recipe-button">
                 📝 Continue to New Recipe

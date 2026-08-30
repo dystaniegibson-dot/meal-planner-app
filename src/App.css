@@ -3463,8 +3463,11 @@ section > h1 {
 
 .recipe-crop-image-container {
   position: relative;
-  display: inline-block;
-  max-width: 100%;
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  max-height: 70vh;
+  margin: 0 auto;
   cursor: crosshair;
   touch-action: none;
   user-select: none;
@@ -3475,8 +3478,12 @@ section > h1 {
 
 .recipe-crop-image {
   display: block;
-  max-width: 100%;
+  width: 100%;
+  max-width: 900px;
+  max-height: 70vh;
   height: auto;
+  object-fit: contain;
+  margin: 0 auto;
   user-select: none;
   -webkit-user-drag: none;
   pointer-events: none;
@@ -3500,23 +3507,44 @@ section > h1 {
   margin-top: 15px;
 }
 
+/* ============================== Uploaded Scanner Images ============================== */
+
+.scanner-image-preview {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  max-height: 60vh;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+/* ============================== Scanner Image Container ============================== */
+
+.scanner-image-item {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ============================== Scanner Image List ============================== */
+
+.scanner-image-list {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 /* ============================== Scanner Steps ============================== */
 
 .scanner-steps {
   display: flex;
-
   flex-direction: column;
-
   gap: 12px;
-
   margin: 20px 0 25px;
-
   padding: 18px;
-
   border: 2px solid var(--theme-accent);
-
   border-radius: 14px;
-
   background: rgba(234, 223, 243, 0.75);
 }
 
@@ -3524,9 +3552,7 @@ section > h1 {
 
 .scanner-step {
   display: flex;
-
   align-items: flex-start;
-
   gap: 12px;
 }
 
@@ -3534,23 +3560,14 @@ section > h1 {
 
 .scanner-step-number {
   flex: 0 0 30px;
-
   width: 30px;
-
   height: 30px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   border-radius: 50%;
-
   background: var(--theme-accent);
-
   color: white;
-
   font-weight: bold;
 }
 
@@ -3558,15 +3575,12 @@ section > h1 {
 
 .scanner-step strong {
   display: block;
-
   margin-bottom: 3px;
 }
 
 .scanner-step p {
   margin: 0;
-
   font-size: 14px;
-
   line-height: 1.4;
 }
 
@@ -3580,9 +3594,7 @@ section > h1 {
 
 .recipe-crop-instruction {
   margin: 0 0 8px;
-
   font-weight: bold;
-
   text-align: center;
 }
 
@@ -3590,19 +3602,14 @@ section > h1 {
 
 .scanner-next-step {
   margin-top: 20px;
-
   padding: 16px;
-
   border-radius: 12px;
-
   background: rgba(234, 223, 243, 0.8);
-
   text-align: center;
 }
 
 .scanner-step-message {
   margin: 0 0 12px;
-
   line-height: 1.5;
 }
 
@@ -3614,13 +3621,9 @@ section > h1 {
 
 .scanner-extract-section {
   margin-top: 20px;
-
   padding: 18px;
-
   border-radius: 14px;
-
   background: rgba(234, 223, 243, 0.8);
-
   text-align: center;
 }
 
@@ -3630,7 +3633,6 @@ section > h1 {
 
 .scanner-extract-section p {
   margin: 6px 0;
-
   line-height: 1.5;
 }
 
@@ -3647,9 +3649,7 @@ section > h1 {
 
   .scanner-step-number {
     flex-basis: 28px;
-
     width: 28px;
-
     height: 28px;
   }
 
@@ -3665,6 +3665,79 @@ section > h1 {
   .scanner-scan-button,
   .scanner-save-recipe-button {
     width: 100%;
+  }
+
+  /* Uploaded images stay within the phone screen. */
+  .scanner-image-preview {
+    width: 100%;
+    max-width: 100%;
+    max-height: 55vh;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* Crop editor stays within the phone screen. */
+  .recipe-crop-image-container {
+    width: 100%;
+    max-width: 100%;
+    max-height: 65vh;
+  }
+
+  .recipe-crop-image {
+    width: 100%;
+    max-width: 100%;
+    max-height: 65vh;
+  }
+
+  /* Keep the crop action easy to tap on mobile. */
+  .scanner-save-cropped-image-button {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+}
+
+/* ============================== Tablet ============================== */
+
+@media (min-width: 601px) and (max-width: 1024px) {
+  .scanner-image-preview {
+    width: 100%;
+    max-width: 750px;
+    max-height: 60vh;
+  }
+
+  .recipe-crop-image-container {
+    width: 100%;
+    max-width: 750px;
+    max-height: 70vh;
+  }
+
+  .recipe-crop-image {
+    width: 100%;
+    max-width: 750px;
+    max-height: 70vh;
+  }
+}
+
+/* ============================== Desktop ============================== */
+
+@media (min-width: 1025px) {
+  .scanner-image-preview {
+    width: 100%;
+    max-width: 900px;
+    max-height: 60vh;
+  }
+
+  .recipe-crop-image-container {
+    width: 100%;
+    max-width: 900px;
+    max-height: 70vh;
+  }
+
+  .recipe-crop-image {
+    width: 100%;
+    max-width: 900px;
+    max-height: 70vh;
   }
 }
 
