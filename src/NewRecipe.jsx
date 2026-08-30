@@ -7,7 +7,7 @@ export default function NewRecipe({
   newRecipe,
   setNewRecipe,
   saveRecipe,
-  recipeAdded,
+  recipeSaveStatus,
   instructionRefs,
   inputRefs,
 }) {
@@ -41,6 +41,41 @@ export default function NewRecipe({
     }, 0);
   };
 
+  // ============================== Paste Recipe Image ==============================
+
+  // Handles an image pasted from the clipboard into the recipe photo box.
+  const handlePasteRecipeImage = (e) => {
+    const items = e.clipboardData?.items;
+
+    // Nothing was pasted.
+    if (!items) return;
+
+    for (const item of items) {
+      // We only want image data.
+      if (!item.type.startsWith("image/")) continue;
+
+      const file = item.getAsFile();
+
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        setNewRecipe((prev) => ({
+          ...prev,
+          image: event.target.result,
+        }));
+      };
+
+      reader.readAsDataURL(file);
+
+      // Stop the browser from trying to paste the image somewhere else.
+      e.preventDefault();
+
+      return;
+    }
+  };
+
   return (
     <main className="new-recipe-page">
       {/* ============================== Recipe Instructions ============================== */}
@@ -69,26 +104,59 @@ export default function NewRecipe({
 
             <p className="recipe-photo-description">Add the cropped recipe image you want displayed with this recipe in your Recipe Book.</p>
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
+            <div className="recipe-photo-input-row">
+              {/* ============================== Paste Image Box ============================== */}
 
-                if (!file) return;
+              <div className="recipe-photo-paste-box" tabIndex={0} onPaste={handlePasteRecipeImage}>
+                {newRecipe.image ? (
+                  <>
+                    <img src={newRecipe.image} alt="Recipe photo preview" className="recipe-photo-pasted-image" />
 
-                const reader = new FileReader();
+                    <p className="recipe-photo-paste-success">✅ Recipe image added</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="recipe-photo-paste-icon">🖼️</div>
 
-                reader.onload = (event) => {
-                  setNewRecipe((prev) => ({
-                    ...prev,
-                    image: event.target.result,
-                  }));
-                };
+                    <strong>Add your recipe photo</strong>
 
-                reader.readAsDataURL(file);
-              }}
-            />
+                    <p>Paste an image here or use the button below.</p>
+
+                    <button type="button" className="recipe-photo-paste-button" onClick={handlePasteRecipeImage}>
+                      📋 Paste Image
+                    </button>
+
+                    <small>Computer: Ctrl + V &nbsp;•&nbsp; Phone: tap Paste Image</small>
+                  </>
+                )}
+              </div>
+
+              {/* ============================== Choose Image ============================== */}
+
+              <label className="recipe-photo-choose-button">
+                📁 Choose Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+
+                    if (!file) return;
+
+                    const reader = new FileReader();
+
+                    reader.onload = (event) => {
+                      setNewRecipe((prev) => ({
+                        ...prev,
+                        image: event.target.result,
+                      }));
+                    };
+
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+            </div>
           </div>
 
           {/* ============================== Recipe Text ============================== */}
@@ -291,11 +359,8 @@ export default function NewRecipe({
           {/* ============================== Recipe Actions ============================== */}
 
           <div className="recipe-actions">
-            <button
-              className="save-recipe-button"
-              onClick={saveRecipe} // Save the completed recipe.
-            >
-              {recipeAdded ? "✅ Recipe Added!" : "Save Recipe"}
+            <button className="save-recipe-button" onClick={saveRecipe}>
+              Save Recipe
             </button>
 
             <button
@@ -318,6 +383,13 @@ export default function NewRecipe({
               🗑️ Clear Recipe
             </button>
           </div>
+          {/* ============================== Save Success Message ============================== */}
+
+          {recipeSaveStatus && (
+            <div className="recipe-success-popup">
+              {recipeSaveStatus === "duplicate" ? "⚠️ You already have this recipe. Try a new one!" : "✅ Recipe saved successfully!"}
+            </div>
+          )}
         </div>
       </div>
     </main>

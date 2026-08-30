@@ -756,25 +756,172 @@ body {
 
 .recipe-photo-section {
   margin-top: 10px;
-  margin-bottom: 15px;
+
+  margin-bottom: 25px;
+
+  padding: 18px;
+
+  border: 2px dashed var(--theme-accent);
+
+  border-radius: 12px;
+
+  background: rgba(170, 125, 200, 0.08);
 }
+
+/* ============================== Recipe Photo Paste Box ============================== */
+
+.recipe-photo-paste-box {
+  min-height: 180px;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  border: 2px dashed var(--theme-accent);
+
+  border-radius: 12px;
+
+  background: #eadff3;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+
+  padding: 20px;
+
+  cursor: pointer;
+}
+
+/* ============================== Paste Box Icon ============================== */
+
+.recipe-photo-paste-icon {
+  font-size: 32px;
+
+  margin-bottom: 8px;
+}
+
+/* ============================== Paste Box Instructions ============================== */
+
+.recipe-photo-paste-box p {
+  margin: 6px 0 12px;
+}
+
+.recipe-photo-paste-box small {
+  margin-top: 10px;
+
+  opacity: 0.75;
+}
+
+/* ============================== Paste Image Button ============================== */
+
+.recipe-photo-paste-button {
+  border: none;
+
+  border-radius: 8px;
+
+  padding: 10px 16px;
+
+  background: var(--theme-accent);
+
+  color: white;
+
+  font-weight: bold;
+
+  cursor: pointer;
+}
+
+/* ============================== Pasted Image ============================== */
+
+.recipe-photo-pasted-image {
+  display: block;
+
+  max-width: 100%;
+
+  max-height: 250px;
+
+  object-fit: contain;
+
+  border-radius: 8px;
+}
+
+/* ============================== Paste Success ============================== */
+
+.recipe-photo-paste-success {
+  margin: 8px 0 0;
+
+  font-weight: bold;
+}
+
+/* ============================== Recipe Photo Label ============================== */
 
 .recipe-photo-label {
   display: block;
+
   color: var(--theme-accent);
+
   font-weight: bold;
+
+  font-size: 20px;
+
   margin-bottom: 6px;
 }
 
+/* ============================== Recipe Photo Description ============================== */
+
 .recipe-photo-description {
-  margin: 0 0 8px;
+  margin: 0 0 15px;
+
   color: #6b4b45;
+
   font-size: 13px;
+
   line-height: 1.4;
 }
 
+/* ============================== Recipe Image Preview ============================== */
+
 .recipe-image-preview {
+  display: block;
+
   width: 200px;
+
+  max-width: 100%;
+
+  height: auto;
+
+  margin-top: 15px;
+
+  border-radius: 8px;
+
+  border: 2px solid var(--theme-accent);
+}
+
+/* ============================== Image File Input ============================== */
+
+.recipe-photo-section input[type="file"] {
+  margin-top: 8px;
+
+  margin-bottom: 8px;
+}
+
+/* ============================== Paste Image Button ============================== */
+
+.recipe-photo-section button {
+  margin-left: 8px;
+
+  padding: 7px 12px;
+
+  border: none;
+
+  border-radius: 6px;
+
+  cursor: pointer;
 }
 
 /* ============================== Auto Fill ============================== */
@@ -3302,4 +3449,237 @@ section > h1 {
   .open-recipe-book {
     display: none;
   }
+}
+
+/* ============================== Crop Editor ============================== */
+
+.recipe-crop-editor {
+  margin-top: 30px;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+/* ============================== Crop Image Container ============================== */
+
+.recipe-crop-image-container {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* ============================== Crop Image ============================== */
+
+.recipe-crop-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* ============================== Crop Selection ============================== */
+
+.recipe-crop-selection {
+  position: absolute;
+  border: 3px solid white;
+  background: rgba(255, 255, 255, 0.2);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* ============================== Crop Buttons ============================== */
+
+.recipe-crop-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+/* ============================== Scanner Steps ============================== */
+
+.scanner-steps {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 12px;
+
+  margin: 20px 0 25px;
+
+  padding: 18px;
+
+  border: 2px solid var(--theme-accent);
+
+  border-radius: 14px;
+
+  background: rgba(234, 223, 243, 0.75);
+}
+
+/* ============================== Individual Scanner Step ============================== */
+
+.scanner-step {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 12px;
+}
+
+/* ============================== Step Number ============================== */
+
+.scanner-step-number {
+  flex: 0 0 30px;
+
+  width: 30px;
+
+  height: 30px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: var(--theme-accent);
+
+  color: white;
+
+  font-weight: bold;
+}
+
+/* ============================== Step Text ============================== */
+
+.scanner-step strong {
+  display: block;
+
+  margin-bottom: 3px;
+}
+
+.scanner-step p {
+  margin: 0;
+
+  font-size: 14px;
+
+  line-height: 1.4;
+}
+
+/* ============================== Cropped Status ============================== */
+
+.scanner-cropped-status {
+  font-weight: bold;
+}
+
+/* ============================== Crop Instruction ============================== */
+
+.recipe-crop-instruction {
+  margin: 0 0 8px;
+
+  font-weight: bold;
+
+  text-align: center;
+}
+
+/* ============================== Next Step ============================== */
+
+.scanner-next-step {
+  margin-top: 20px;
+
+  padding: 16px;
+
+  border-radius: 12px;
+
+  background: rgba(234, 223, 243, 0.8);
+
+  text-align: center;
+}
+
+.scanner-step-message {
+  margin: 0 0 12px;
+
+  line-height: 1.5;
+}
+
+.scanner-ready-message {
+  font-weight: bold;
+}
+
+/* ============================== Final Step ============================== */
+
+.scanner-extract-section {
+  margin-top: 20px;
+
+  padding: 18px;
+
+  border-radius: 14px;
+
+  background: rgba(234, 223, 243, 0.8);
+
+  text-align: center;
+}
+
+.scanner-extract-section h3 {
+  margin-top: 0;
+}
+
+.scanner-extract-section p {
+  margin: 6px 0;
+
+  line-height: 1.5;
+}
+
+/* ============================== Mobile Scanner ============================== */
+
+@media (max-width: 600px) {
+  .scanner-steps {
+    padding: 14px;
+  }
+
+  .scanner-step {
+    gap: 10px;
+  }
+
+  .scanner-step-number {
+    flex-basis: 28px;
+
+    width: 28px;
+
+    height: 28px;
+  }
+
+  .scanner-step p {
+    font-size: 13px;
+  }
+
+  .scanner-next-step,
+  .scanner-extract-section {
+    padding: 14px;
+  }
+
+  .scanner-scan-button,
+  .scanner-save-recipe-button {
+    width: 100%;
+  }
+}
+
+/* ============================== App Footer ============================== */
+
+.app-footer {
+  width: 100%;
+  margin-top: auto;
+  padding: 20px;
+  text-align: center;
+  color: #000000;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.app-footer p {
+  margin: 0;
 }

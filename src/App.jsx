@@ -10,7 +10,8 @@ import Planner from "./Planner";
 import GroceryList from "./GroceryList";
 import SignIn from "./SignIn";
 import Settings, { themes } from "./Settings";
-
+import RecipeScanner from "./RecipeScanner";
+import Footer from "./Footer";
 // ============================== App Component ==============================
 export default function App() {
   useEffect(() => {
@@ -40,6 +41,11 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [groceryAdded, setGroceryAdded] = useState(false);
   const [recipeAdded, setRecipeAdded] = useState(false);
+  // Tracks the New Recipe save result.
+  // "" = no message
+  // "success" = recipe saved
+  // "duplicate" = recipe already exists
+  const [recipeSaveStatus, setRecipeSaveStatus] = useState("");
   const [plannerSearch, setPlannerSearch] = useState("");
   const [plannerFeedback, setPlannerFeedback] = useState("");
   const [openDay, setOpenDay] = useState(null);
@@ -525,6 +531,44 @@ export default function App() {
     setFullRecipePaste("");
   };
 
+  // ============================== Send Scanned Recipe to New Recipe ==============================
+
+  // ============================== Send Scanned Recipe to New Recipe ==============================
+
+  const handleScannerSaveRecipe = (recipe, recipeImage) => {
+    // Convert the scanned recipe into the same plain-text format
+    // that the existing Auto Fill Recipe parser expects.
+
+    const recipeText = [
+      recipe.recipeName || "",
+
+      recipe.ingredients?.length ? `Ingredients:\n${recipe.ingredients.join("\n")}` : "",
+
+      recipe.instructions?.length
+        ? `Instructions:\n${recipe.instructions.map((instruction, index) => `${index + 1}. ${instruction}`).join("\n")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    // Put the scanned recipe into the existing
+    // "Paste full recipe here..." box.
+
+    setFullRecipePaste(recipeText);
+
+    // Put the first cropped recipe page directly into
+    // the Recipe Photo section on New Recipe.
+
+    setNewRecipe((prev) => ({
+      ...prev,
+      image: recipeImage || "",
+    }));
+
+    // Open the New Recipe page.
+
+    setPage("new");
+  };
+
   const extractRecipeName = (text) => {
     const lines = text
       .split("\n")
@@ -616,12 +660,46 @@ export default function App() {
     let error;
 
     if (editIndex !== null && recipes[editIndex]?.id) {
+      // ============================== Update Existing Recipe ==============================
+
       const result = await supabase.from("recipes").update(recipeToSave).eq("id", recipes[editIndex].id).eq("user_id", user.id).select().single();
 
       data = result.data;
       error = result.error;
     } else {
+      // ============================== Check For Duplicate Recipe ==============================
+
+      // Look for another recipe belonging to this user
+      // with the same recipe name.
+      const { data: existingRecipe, error: duplicateCheckError } = await supabase
+        .from("recipes")
+        .select("id")
+        .eq("user_id", user.id)
+        .ilike("name", newRecipe.name.trim())
+        .limit(1)
+        .maybeSingle();
+
+      if (duplicateCheckError) {
+        console.error("Error checking for duplicate recipe:", duplicateCheckError);
+        alert("There was a problem checking for duplicate recipes.");
+        return;
+      }
+
+      // Stop the save if this recipe name already exists.
+      if (existingRecipe) {
+        setRecipeSaveStatus("duplicate");
+
+        setTimeout(() => {
+          setRecipeSaveStatus("");
+        }, 2000);
+
+        return;
+      }
+
+      // ============================== Save New Recipe ==============================
+
       const result = await supabase.from("recipes").insert([recipeToSave]).select().single();
+
       data = result.data;
       error = result.error;
     }
@@ -631,6 +709,21 @@ export default function App() {
       alert("There was a problem saving your recipe.");
       return;
     }
+
+    // Clear the New Recipe form after a successful save.
+    setNewRecipe({
+      name: "",
+      ingredients: [""],
+      instructions: [""],
+      image: "",
+      imageIngredients: [],
+      imageInstructions: [],
+      favorite: false,
+      category: "",
+    });
+
+    // Clear the full recipe text box as well.
+    setFullRecipePaste("");
 
     const savedRecipe = formatSavedRecipe(data);
 
@@ -643,10 +736,11 @@ export default function App() {
     });
 
     setEditIndex(null);
-    setRecipeAdded(true);
+
+    setRecipeSaveStatus("success");
 
     setTimeout(() => {
-      setRecipeAdded(false);
+      setRecipeSaveStatus("");
     }, 2000);
   };
 
@@ -869,7 +963,6 @@ export default function App() {
       }}
     >
       {popupOpen && <div onClick={() => setPopupOpen(false)} className="app-popup-overlay" style={{ left: sidebarOpen ? 270 : 0 }} />}
-
       {/* <header className="app-header">
         <h1 className="app-title">🍓 Cozy Recipe Book</h1>
       </header> */}
@@ -908,6 +1001,18 @@ export default function App() {
           >
             <span className="sidebar-icon">🔍</span>
             <span className="sidebar-label">Discover</span>
+          </button>
+
+          <button
+            className="sidebar-button"
+            onClick={() => setPage("scanner")}
+            style={{
+              background: page === "scanner" ? "var(--theme-accent)" : "#ffffff",
+              padding: page === "scanner" ? "14px 18px" : "12px 16px",
+            }}
+          >
+            <span className="sidebar-icon">📷</span>
+            <span className="sidebar-label">Recipe Scanner</span>
           </button>
 
           <button
@@ -994,7 +1099,8 @@ export default function App() {
               themeFruit={currentTheme.fruit}
             />
           )}
-
+          {/* ============================== Recipe Scanner ============================== */}
+          {page === "scanner" && <RecipeScanner onSaveRecipe={handleScannerSaveRecipe} />}
           {/* ============================== New Recipe ============================== */}
           {/* NEW RECIPE */}
           {page === "new" && (
@@ -1005,7 +1111,7 @@ export default function App() {
               newRecipe={newRecipe}
               setNewRecipe={setNewRecipe}
               saveRecipe={saveRecipe}
-              recipeAdded={recipeAdded}
+              recipeSaveStatus={recipeSaveStatus}
               instructionRefs={instructionRefs}
               inputRefs={inputRefs}
             />
@@ -1301,6 +1407,7 @@ export default function App() {
           </article>
         </div>
       )}
+      <Footer />
     </div>
   );
 }
