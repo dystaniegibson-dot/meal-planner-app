@@ -567,6 +567,13 @@ export default function App() {
     // Open the New Recipe page.
 
     setPage("new");
+
+    // Start the New Recipe page at the top.
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   const extractRecipeName = (text) => {
