@@ -1,5 +1,5 @@
 // ============================== New Recipe Page ==============================
-
+import { useState, useRef } from "react";
 export default function NewRecipe({
   fullRecipePaste,
   setFullRecipePaste,
@@ -11,6 +11,91 @@ export default function NewRecipe({
   instructionRefs,
   inputRefs,
 }) {
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isCroppingImage, setIsCroppingImage] = useState(false);
+  const cropImageRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // Stores the area of the image selected for cropping.
+  const [cropArea, setCropArea] = useState({
+    x: 10,
+    y: 10,
+    width: 80,
+    height: 80,
+  });
+
+  // Tracks whether the user is currently dragging out a crop area.
+  const [isDraggingCrop, setIsDraggingCrop] = useState(false);
+
+  // Stores where the crop selection started.
+  const cropDragStart = useRef(null);
+
+  // ==============================
+  // Start Crop Selection
+  // ==============================
+
+  const handleCropPointerDown = (e) => {
+    if (!cropImageRef.current) return;
+
+    const image = cropImageRef.current;
+    const rect = image.getBoundingClientRect();
+
+    const startX = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+
+    const startY = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+
+    cropDragStart.current = {
+      x: startX,
+      y: startY,
+    };
+
+    setCropArea({
+      x: startX,
+      y: startY,
+      width: 0,
+      height: 0,
+    });
+
+    setIsDraggingCrop(true);
+
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  // ==============================
+  // Move Crop Selection
+  // ==============================
+
+  const handleCropPointerMove = (e) => {
+    if (!isDraggingCrop || !cropDragStart.current || !cropImageRef.current) {
+      return;
+    }
+
+    const image = cropImageRef.current;
+    const rect = image.getBoundingClientRect();
+
+    const currentX = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+
+    const currentY = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+
+    const startX = cropDragStart.current.x;
+    const startY = cropDragStart.current.y;
+
+    setCropArea({
+      x: Math.min(startX, currentX),
+      y: Math.min(startY, currentY),
+      width: Math.abs(currentX - startX),
+      height: Math.abs(currentY - startY),
+    });
+  };
+
+  // ==============================
+  // Finish Crop Selection
+  // ==============================
+
+  const handleCropPointerUp = () => {
+    setIsDraggingCrop(false);
+    cropDragStart.current = null;
+  };
   // ============================== Add Recipe Items ==============================
 
   // Add a new ingredient and immediately move focus to it.
@@ -96,68 +181,6 @@ export default function NewRecipe({
           {/* ============================== Recipe Form ============================== */}
 
           <h3>Add Recipe</h3>
-
-          {/* ============================== Recipe Photo ============================== */}
-
-          <div className="recipe-photo-section">
-            <label className="recipe-photo-label">🖼️ Recipe Photo</label>
-
-            <p className="recipe-photo-description">Add the cropped recipe image you want displayed with this recipe in your Recipe Book.</p>
-
-            <div className="recipe-photo-input-row">
-              {/* ============================== Paste Image Box ============================== */}
-
-              <div className="recipe-photo-paste-box" tabIndex={0} onPaste={handlePasteRecipeImage}>
-                {newRecipe.image ? (
-                  <>
-                    <img src={newRecipe.image} alt="Recipe photo preview" className="recipe-photo-pasted-image" />
-
-                    <p className="recipe-photo-paste-success">✅ Recipe image added</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="recipe-photo-paste-icon">🖼️</div>
-
-                    <strong>Add your recipe photo</strong>
-
-                    <p>Paste an image here or use the button below.</p>
-
-                    <button type="button" className="recipe-photo-paste-button" onClick={handlePasteRecipeImage}>
-                      📋 Paste Image
-                    </button>
-
-                    <small>Computer: Ctrl + V &nbsp;•&nbsp; Phone: tap Paste Image</small>
-                  </>
-                )}
-              </div>
-
-              {/* ============================== Choose Image ============================== */}
-
-              <label className="recipe-photo-choose-button">
-                📁 Choose Image
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-
-                    if (!file) return;
-
-                    const reader = new FileReader();
-
-                    reader.onload = (event) => {
-                      setNewRecipe((prev) => ({
-                        ...prev,
-                        image: event.target.result,
-                      }));
-                    };
-
-                    reader.readAsDataURL(file);
-                  }}
-                />
-              </label>
-            </div>
-          </div>
 
           {/* ============================== Recipe Text ============================== */}
 
@@ -356,6 +379,167 @@ export default function NewRecipe({
             </button>
           </div>
 
+          {/* ============================== Recipe Photo ============================== */}
+
+          <div className="recipe-photo-section">
+            <label className="recipe-photo-label">🖼️ Recipe Photo</label>
+
+            <p className="recipe-photo-description">Add the cropped recipe image you want displayed with this recipe in your Recipe Book.</p>
+
+            <div className="recipe-photo-input-row">
+              {/* ============================== Paste Image Box ============================== */}
+
+              <div className="recipe-photo-paste-box" tabIndex={0} onPaste={handlePasteRecipeImage}>
+                {newRecipe.image ? (
+                  <>
+                    <img src={newRecipe.image} alt="Recipe photo preview" className="recipe-photo-pasted-image" />
+
+                    <p className="recipe-photo-paste-success">✅ Recipe image added</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="recipe-photo-paste-icon">🖼️</div>
+
+                    <strong>Add your recipe photo</strong>
+
+                    <p>Paste an image here or use the button below.</p>
+
+                    <button type="button" className="recipe-photo-paste-button" onClick={handlePasteRecipeImage}>
+                      📋 Paste Image
+                    </button>
+
+                    <small>Computer: Ctrl + V &nbsp;•&nbsp; Phone: tap Paste Image</small>
+                  </>
+                )}
+              </div>
+
+              {/* ============================== Choose Image ============================== */}
+
+              <label className="recipe-photo-choose-button">
+                📁 Choose Image
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+
+                    if (!file) return;
+
+                    // Remember the image the user selected.
+                    // We will use this image for the cropper next.
+                    setSelectedImage(file);
+                  }}
+                />
+              </label>
+              {selectedImage && (
+                <div className="recipe-selected-image">
+                  <p>✅ Image selected</p>
+
+                  <img src={URL.createObjectURL(selectedImage)} alt="Selected recipe" className="recipe-selected-image-preview" />
+
+                  <button
+                    type="button"
+                    className="recipe-crop-button"
+                    onClick={() => {
+                      // Open the crop editor for the selected image.
+                      setIsCroppingImage(true);
+                    }}
+                  >
+                    ✂️ Crop Image
+                  </button>
+                </div>
+              )}
+
+              {isCroppingImage && selectedImage && (
+                <div className="recipe-image-cropper">
+                  <h4>✂️ Crop Your Recipe Image</h4>
+
+                  <p>Drag a rectangle around the part of the image you want to keep.</p>
+
+                  <div
+                    className="recipe-crop-image-container"
+                    onPointerDown={handleCropPointerDown}
+                    onPointerMove={handleCropPointerMove}
+                    onPointerUp={handleCropPointerUp}
+                    onPointerCancel={handleCropPointerUp}
+                  >
+                    <img
+                      ref={cropImageRef}
+                      src={URL.createObjectURL(selectedImage)}
+                      alt="Crop recipe"
+                      className="recipe-crop-image"
+                      draggable="false"
+                    />
+
+                    {cropArea.width > 0 && cropArea.height > 0 && (
+                      <div
+                        className="recipe-crop-selection"
+                        style={{
+                          left: `${cropArea.x}%`,
+                          top: `${cropArea.y}%`,
+                          width: `${cropArea.width}%`,
+                          height: `${cropArea.height}%`,
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  <div className="recipe-crop-buttons">
+                    <button
+                      type="button"
+                      className="recipe-use-crop-button"
+                      onClick={() => {
+                        if (!cropImageRef.current || cropArea.width <= 0 || cropArea.height <= 0) {
+                          return;
+                        }
+
+                        const image = cropImageRef.current;
+                        const canvas = document.createElement("canvas");
+
+                        const sourceX = (cropArea.x / 100) * image.naturalWidth;
+                        const sourceY = (cropArea.y / 100) * image.naturalHeight;
+                        const sourceWidth = (cropArea.width / 100) * image.naturalWidth;
+                        const sourceHeight = (cropArea.height / 100) * image.naturalHeight;
+
+                        canvas.width = sourceWidth;
+                        canvas.height = sourceHeight;
+
+                        const context = canvas.getContext("2d");
+
+                        if (!context) return;
+
+                        context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
+
+                        const croppedImage = canvas.toDataURL("image/jpeg", 0.9);
+
+                        setNewRecipe((prev) => ({
+                          ...prev,
+                          image: croppedImage,
+                        }));
+
+                        setSelectedImage(null);
+                        setIsCroppingImage(false);
+                      }}
+                    >
+                      ✅ Use This Crop
+                    </button>
+
+                    <button
+                      type="button"
+                      className="recipe-crop-cancel-button"
+                      onClick={() => {
+                        setIsCroppingImage(false);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* ============================== Recipe Actions ============================== */}
 
           <div className="recipe-actions">
@@ -378,6 +562,10 @@ export default function NewRecipe({
                 });
 
                 setFullRecipePaste(""); // Clear the pasted recipe text.
+                setSelectedImage(null);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
               }}
             >
               🗑️ Clear Recipe

@@ -280,9 +280,69 @@ export default function RecipeScanner({ onSaveRecipe }) {
       const reader = new FileReader();
 
       reader.onload = () => {
-        const base64String = reader.result.split(",")[1];
+        const image = new Image();
 
-        resolve(base64String);
+        image.onload = () => {
+          // Keep the entire recipe page, but reduce very large
+          // phone-camera images before sending them to OCR.
+          const maxDimension = 2000;
+
+          let width = image.naturalWidth;
+          let height = image.naturalHeight;
+
+          if (width > maxDimension || height > maxDimension) {
+            if (width >= height) {
+              height = Math.round((height / width) * maxDimension);
+              width = maxDimension;
+            } else {
+              width = Math.round((width / height) * maxDimension);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const context = canvas.getContext("2d");
+
+          if (!context) {
+            reject(new Error("Unable to prepare the image for scanning."));
+            return;
+          }
+
+          context.drawImage(image, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Unable to prepare the image for scanning."));
+                return;
+              }
+
+              const resizedReader = new FileReader();
+
+              resizedReader.onload = () => {
+                const base64String = resizedReader.result.split(",")[1];
+
+                resolve(base64String);
+              };
+
+              resizedReader.onerror = reject;
+
+              resizedReader.readAsDataURL(blob);
+            },
+            "image/jpeg",
+            0.85,
+          );
+        };
+
+        image.onerror = () => {
+          reject(new Error("Unable to read the selected image."));
+        };
+
+        image.src = reader.result;
       };
 
       reader.onerror = reject;
@@ -329,6 +389,8 @@ export default function RecipeScanner({ onSaveRecipe }) {
       );
 
       // ============================== Call Supabase ==============================
+
+      console.log("Scanner: images prepared successfully", images.length);
 
       const { data, error } = await supabase.functions.invoke("scan-recipe", {
         body: {

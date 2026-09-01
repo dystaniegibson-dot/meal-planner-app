@@ -21,6 +21,9 @@ export default function Planner({
 
   const [randomRecipe, setRandomRecipe] = useState(null);
   const [randomizerMessage, setRandomizerMessage] = useState("");
+  // Tracks whether the user is currently choosing a day
+  // to save the randomized recipe to.
+  const [choosingRandomDay, setChoosingRandomDay] = useState(false);
 
   const pickRandomRecipe = () => {
     if (!recipes || recipes.length === 0) {
@@ -57,11 +60,11 @@ export default function Planner({
   const saveRandomToDay = () => {
     if (!randomRecipe) return;
 
+    // Show the day picker directly in the Randomizer.
+    // We don't need to open the normal Planner modal.
     setOpenDay(null);
-
-    // Open the normal day picker.
-    // The user can choose the day just like they already do.
-    setRandomizerMessage(`Choose a day above to add ${randomRecipe.name}.`);
+    setChoosingRandomDay(true);
+    setRandomizerMessage("");
   };
 
   const giveUpRandomizer = () => {
@@ -182,6 +185,29 @@ export default function Planner({
                 </button>
               </div>
             </div>
+            {choosingRandomDay && (
+              <div className="planner-random-day-picker">
+                <h4>📅 What day would you like to add this to?</h4>
+
+                <div className="planner-random-day-buttons">
+                  {Object.keys(weeklyPlan).map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      className="planner-random-day-button"
+                      onClick={() => {
+                        assignToDay(day, randomRecipe);
+
+                        setChoosingRandomDay(false);
+                        setRandomizerMessage(`✅ ${randomRecipe.name} added to ${day}!`);
+                      }}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

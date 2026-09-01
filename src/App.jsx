@@ -630,6 +630,10 @@ export default function App() {
     setIngredientPaste("");
     setInstructionPaste("");
     setFullRecipePaste("");
+    // Also clear the separately selected image.
+    setSelectedImage(null);
+    // Make sure the cropper is closed.
+    setIsCroppingImage(false);
   };
 
   const scrollToTop = () => {

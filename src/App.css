@@ -768,6 +768,54 @@ body {
   background: rgba(170, 125, 200, 0.08);
 }
 
+.recipe-selected-image-preview {
+  max-width: 400px;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 10px auto;
+}
+
+.recipe-crop-image-container {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.recipe-crop-image {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 400px;
+  max-height: 400px;
+}
+
+@media (max-width: 600px) {
+  .recipe-crop-image {
+    max-width: calc(100vw - 40px);
+    max-height: 400px;
+  }
+}
+
+.recipe-crop-selection {
+  position: absolute;
+  box-sizing: border-box;
+  border: 3px solid white;
+  background: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+}
+
+@media (max-width: 600px) {
+  .recipe-crop-image {
+    max-width: calc(100vw - 40px);
+    max-height: 400px;
+  }
+}
+
 /* ============================== Recipe Photo Paste Box ============================== */
 
 .recipe-photo-paste-box {
@@ -3363,6 +3411,45 @@ section > h1 {
   }
   .planner-random-buttons button {
     width: 100%;
+  }
+
+  /* ==========================================
+   Randomizer - Choose a Day Mode
+   ========================================== */
+
+  .planner-day-card-selecting {
+    cursor: pointer;
+    outline: 2px dashed currentColor;
+  }
+
+  /* ==========================================
+   Randomizer - Day Picker
+   ========================================== */
+
+  .planner-random-day-picker {
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.04);
+    text-align: center;
+  }
+
+  .planner-random-day-picker h4 {
+    margin: 0 0 14px;
+  }
+
+  .planner-random-day-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .planner-random-day-button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
   }
 
   /* ============================== Recipe Book ============================== */
