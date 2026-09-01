@@ -353,16 +353,18 @@ export default function RecipeScanner({ onSaveRecipe }) {
 
   // ============================== Scan Recipe ==============================
 
+  // ============================== Scan Recipe ==============================
+
   const handleScanRecipe = async () => {
     if (!imageFiles.length) {
-      setErrorMessage("Please choose at least one recipe image first.");
+      setErrorMessage("❌ Scanner Error: No recipe images were selected.");
       return;
     }
 
     // The recipe photo must be cropped,
     // but the crop is NOT used for OCR.
     if (!isRecipeImageCropped) {
-      setErrorMessage("Please crop the recipe image first.");
+      setErrorMessage("❌ Scanner Error: Please crop the recipe image first.");
       return;
     }
 
@@ -371,54 +373,106 @@ export default function RecipeScanner({ onSaveRecipe }) {
     setRecipe(null);
 
     try {
-      // IMPORTANT:
-      //
-      // Send the ORIGINAL imageFiles to OCR.
-      //
-      // This means:
-      // Page 1 = FULL ORIGINAL PAGE
-      // Page 2 = FULL ORIGINAL PAGE
-      // Page 3 = FULL ORIGINAL PAGE
-      //
-      // The crop is NEVER sent in place of page 1.
-      const images = await Promise.all(
-        imageFiles.map(async (file) => ({
-          image: await imageToBase64(file),
-          mimeType: file.type,
-        })),
-      );
+      // ============================================================
+      // STEP 1 — PREPARE THE IMAGES
+      // ============================================================
 
-      // ============================== Call Supabase ==============================
+      let images;
 
-      console.log("Scanner: images prepared successfully", images.length);
+      try {
+        setErrorMessage("🔄 Step 1/3: Preparing recipe images...");
 
-      const { data, error } = await supabase.functions.invoke("scan-recipe", {
-        body: {
-          images,
-        },
-      });
+        images = await Promise.all(
+          imageFiles.map(async (file) => ({
+            image: await imageToBase64(file),
+            mimeType: file.type,
+          })),
+        );
 
-      // ============================== Handle Supabase Error ==============================
+        console.log("Scanner: images prepared successfully", images.length);
+      } catch (error) {
+        console.error("Scanner Step 1 Error:", error);
+
+        throw new Error(`❌ Image preparation failed: ${error.message || "The selected image could not be prepared."}`);
+      }
+
+      // ============================================================
+      // STEP 2 — CALL SUPABASE
+      // ============================================================
+
+      let data;
+      let error;
+
+      try {
+        setErrorMessage("🔄 Step 2/3: Sending images to the scanner...");
+
+        const response = await supabase.functions.invoke("scan-recipe", {
+          body: {
+            images,
+          },
+        });
+
+        data = response.data;
+        error = response.error;
+
+        console.log("Scanner: Supabase response received", {
+          data,
+          error,
+        });
+      } catch (invokeError) {
+        console.error("Scanner Step 2 Network/Invoke Error:", invokeError);
+
+        throw new Error(`❌ Scanner connection failed: ${invokeError.message || "The scanner request could not be sent."}`);
+      }
+
+      // ============================================================
+      // STEP 3 — CHECK SUPABASE FUNCTION ERROR
+      // ============================================================
 
       if (error) {
-        console.error("Scanner function error:", error);
+        console.error("Scanner Step 3 Supabase Error:", error);
 
-        throw new Error("The scanner could not process the recipe images.");
+        const errorDetails =
+          error.message || error.context?.message || error.details || error.hint || "The scanner function returned an unknown error.";
+
+        throw new Error(`❌ Scanner function error: ${errorDetails}`);
       }
 
-      // ============================== Handle Scanner Error ==============================
+      // ============================================================
+      // STEP 4 — CHECK THE ACTUAL SCANNER RESULT
+      // ============================================================
 
-      if (!data?.success || !data?.recipe) {
-        throw new Error(data?.error || "The scanner did not return a recipe.");
+      console.log("Scanner: final response data", data);
+
+      if (!data) {
+        throw new Error("❌ Scanner result error: No response was returned.");
       }
 
-      // ============================== Store Recipe ==============================
+      if (!data.success) {
+        throw new Error(`❌ Scanner result error: ${data.error || "The scanner did not report success."}`);
+      }
+
+      if (!data.recipe) {
+        throw new Error("❌ Scanner result error: The scanner finished, but no recipe was returned.");
+      }
+
+      // ============================================================
+      // SUCCESS
+      // ============================================================
+
+      console.log("Scanner: recipe successfully extracted", data.recipe);
 
       setRecipe(data.recipe);
+      setErrorMessage("");
     } catch (error) {
-      console.error("Recipe scanner error:", error);
+      console.error("========================================");
+      console.error("RECIPE SCANNER FAILED");
+      console.error("Error:", error);
+      console.error("Message:", error?.message);
+      console.error("Full error:", JSON.stringify(error, null, 2));
+      console.error("========================================");
 
-      setErrorMessage(error.message || "Something went wrong while scanning the recipe.");
+      setErrorMessage(error?.message || "❌ Scanner error: Something went wrong while scanning the recipe.");
     } finally {
       setScanning(false);
     }
