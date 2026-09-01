@@ -432,8 +432,26 @@ export default function RecipeScanner({ onSaveRecipe }) {
       if (error) {
         console.error("Scanner Step 3 Supabase Error:", error);
 
-        const errorDetails =
-          error.message || error.context?.message || error.details || error.hint || "The scanner function returned an unknown error.";
+        // Supabase may give us the actual Edge Function response
+        // inside error.context. We want to read that response so
+        // the app can tell us WHY the scanner failed instead of
+        // only saying "non-2xx status code."
+
+        let serverError = "";
+
+        try {
+          if (error.context && typeof error.context.json === "function") {
+            const errorBody = await error.context.json();
+
+            console.error("Scanner Edge Function Error Body:", errorBody);
+
+            serverError = errorBody?.error || errorBody?.message || errorBody?.details || "";
+          }
+        } catch (readError) {
+          console.error("Could not read Edge Function error response:", readError);
+        }
+
+        const errorDetails = serverError || error.message || error.details || error.hint || "The scanner function returned an unknown error.";
 
         throw new Error(`❌ Scanner function error: ${errorDetails}`);
       }
