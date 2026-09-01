@@ -275,154 +275,130 @@ export default function RecipeScanner({ onSaveRecipe }) {
 
   // ============================== Convert Image to Base64 ==============================
   //
-  // This version is designed to be safer on mobile devices.
+  // MOBILE-SAFE IMAGE PREPARATION
   //
-  // Instead of loading the original image into a huge Base64 data URL first,
-  // we use a temporary object URL. This avoids making an unnecessary full-size
-  // copy of the image in memory.
+  // Phone cameras can produce extremely large images.
   //
-  // We also process one image at a time instead of processing all recipe pages
-  // simultaneously. This is especially important on phones, where available
-  // memory can be much lower than on a PC.
+  // Instead of fully decoding a giant image and THEN resizing it,
+  // createImageBitmap() lets the browser handle the image more efficiently.
   //
-  // The image is resized to a maximum of 2000 pixels on its longest side.
-  // This keeps the entire recipe page readable while preventing extremely
-  // large phone-camera images from overwhelming the browser.
+  // The entire recipe page is preserved for OCR.
+  // We are only reducing the resolution of the OCR copy.
+  //
+  // The cropped recipe image is completely separate.
   //
 
-  const imageToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      if (!file) {
-        reject(new Error("No image file was provided."));
-        return;
+  const imageToBase64 = async (file) => {
+    if (!file) {
+      throw new Error("No image file was provided.");
+    }
+
+    const maxDimension = 1800;
+
+    let bitmap;
+
+    try {
+      // Decode the image.
+      //
+      // createImageBitmap is generally more memory-friendly for large
+      // camera images on modern mobile browsers.
+      bitmap = await createImageBitmap(file);
+    } catch (error) {
+      console.error("Mobile image decode failed:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        error,
+      });
+
+      throw new Error(`The phone could not decode "${file.name}" for scanning.`);
+    }
+
+    try {
+      let width = bitmap.width;
+      let height = bitmap.height;
+
+      // Calculate the correct proportional size.
+      if (width > maxDimension || height > maxDimension) {
+        if (width >= height) {
+          height = Math.round((height / width) * maxDimension);
+          width = maxDimension;
+        } else {
+          width = Math.round((width / height) * maxDimension);
+          height = maxDimension;
+        }
       }
 
-      // Create a temporary browser URL for the original image.
-      // This is much lighter on memory than immediately converting
-      // the entire original file into a Base64 data URL.
-      const objectUrl = URL.createObjectURL(file);
+      const canvas = document.createElement("canvas");
 
-      const image = new Image();
+      canvas.width = width;
+      canvas.height = height;
 
-      // Make sure the temporary URL is released after we're finished.
-      const cleanup = () => {
-        URL.revokeObjectURL(objectUrl);
-      };
+      const context = canvas.getContext("2d");
 
-      image.onload = () => {
-        try {
-          // Keep the entire recipe page, but reduce extremely large
-          // phone-camera images before sending them to Gemini.
-          const maxDimension = 2000;
+      if (!context) {
+        throw new Error("Unable to prepare the image for scanning.");
+      }
 
-          let width = image.naturalWidth;
-          let height = image.naturalHeight;
+      // Draw the COMPLETE recipe page.
+      context.drawImage(bitmap, 0, 0, width, height);
 
-          if (!width || !height) {
-            cleanup();
-            reject(new Error("The selected image has invalid dimensions."));
-            return;
-          }
+      // We no longer need the decoded bitmap.
+      bitmap.close();
 
-          // Resize only when necessary.
-          if (width > maxDimension || height > maxDimension) {
-            if (width >= height) {
-              height = Math.round((height / width) * maxDimension);
-              width = maxDimension;
-            } else {
-              width = Math.round((width / height) * maxDimension);
-              height = maxDimension;
+      const base64String = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Unable to create the scanning image."));
+              return;
             }
-          }
 
-          // Create a canvas for the OCR copy.
-          const canvas = document.createElement("canvas");
+            const reader = new FileReader();
 
-          canvas.width = width;
-          canvas.height = height;
+            reader.onload = () => {
+              const result = reader.result;
 
-          const context = canvas.getContext("2d");
-
-          if (!context) {
-            cleanup();
-            reject(new Error("Unable to prepare the image for scanning."));
-            return;
-          }
-
-          // Draw the complete recipe page onto the canvas.
-          context.drawImage(image, 0, 0, width, height);
-
-          // The original image is no longer needed by this point.
-          cleanup();
-
-          // Convert the prepared image to JPEG.
-          canvas.toBlob(
-            (blob) => {
-              // Release the canvas memory as soon as possible.
-              canvas.width = 1;
-              canvas.height = 1;
-
-              if (!blob) {
-                reject(new Error("Unable to create the scanning image."));
+              if (typeof result !== "string") {
+                reject(new Error("The prepared image could not be read."));
                 return;
               }
 
-              // Convert ONLY the smaller prepared image to Base64.
-              const reader = new FileReader();
+              const commaIndex = result.indexOf(",");
 
-              reader.onload = () => {
-                try {
-                  const result = reader.result;
+              if (commaIndex === -1) {
+                reject(new Error("The prepared image had an invalid format."));
+                return;
+              }
 
-                  if (typeof result !== "string") {
-                    reject(new Error("The prepared image could not be read."));
-                    return;
-                  }
+              resolve(result.slice(commaIndex + 1));
+            };
 
-                  const commaIndex = result.indexOf(",");
+            reader.onerror = () => {
+              reject(new Error("Unable to read the prepared image."));
+            };
 
-                  if (commaIndex === -1) {
-                    reject(new Error("The prepared image had an invalid format."));
-                    return;
-                  }
+            reader.readAsDataURL(blob);
+          },
+          "image/jpeg",
+          0.85,
+        );
+      });
 
-                  // Remove the "data:image/jpeg;base64," portion.
-                  const base64String = result.slice(commaIndex + 1);
+      // Release canvas memory as soon as we're finished.
+      canvas.width = 1;
+      canvas.height = 1;
 
-                  if (!base64String) {
-                    reject(new Error("The prepared image contained no data."));
-                    return;
-                  }
+      return base64String;
+    } catch (error) {
+      try {
+        bitmap.close();
+      } catch {
+        // Bitmap was already released.
+      }
 
-                  resolve(base64String);
-                } catch (error) {
-                  reject(error);
-                }
-              };
-
-              reader.onerror = () => {
-                reject(new Error("Unable to read the prepared image."));
-              };
-
-              reader.readAsDataURL(blob);
-            },
-            "image/jpeg",
-            0.85,
-          );
-        } catch (error) {
-          cleanup();
-          reject(new Error(error?.message || "Unable to prepare the image for scanning."));
-        }
-      };
-
-      image.onerror = () => {
-        cleanup();
-        reject(new Error("The phone or browser could not decode this image. Please try selecting the photo again."));
-      };
-
-      // Load the ORIGINAL image from the temporary browser URL.
-      image.src = objectUrl;
-    });
+      throw error;
+    }
   };
 
   // ============================== Scan Recipe ==============================
@@ -464,15 +440,22 @@ export default function RecipeScanner({ onSaveRecipe }) {
 
         images = [];
 
-        for (const file of imageFiles) {
+        for (let index = 0; index < imageFiles.length; index++) {
+          const file = imageFiles[index];
+
+          setErrorMessage(`🔄 Step 1/3: Preparing recipe image ${index + 1} of ${imageFiles.length}...`);
+
+          console.log("Preparing scanner image:", {
+            page: index + 1,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+          });
+
           const preparedImage = await imageToBase64(file);
 
           images.push({
             image: preparedImage,
-
-            // IMPORTANT:
-            // imageToBase64() converts every scanning image to JPEG,
-            // so the MIME type must also be JPEG.
             mimeType: "image/jpeg",
           });
         }
