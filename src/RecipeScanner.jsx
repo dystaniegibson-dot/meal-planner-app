@@ -247,29 +247,40 @@ export default function RecipeScanner({ onSaveRecipe }) {
         return;
       }
 
-      const croppedFile = new File([blob], "recipe-image-cropped.png", {
-        type: "image/png",
-      });
-
-      // Create a preview for the NEW cropped copy.
-      const croppedPreview = URL.createObjectURL(croppedFile);
-
-      // Remove the previous cropped recipe image, if one exists.
-      if (recipeImagePreview) {
-        URL.revokeObjectURL(recipeImagePreview);
-      }
-
+      // Convert the cropped image into permanent image data.
       // IMPORTANT:
-      // We ONLY save the cropped copy here.
+      // We do NOT save the temporary blob: URL.
+      // A blob: URL only exists in the current browser session,
+      // so it cannot be saved to Supabase and reused later.
       //
-      // imageFiles[0] remains the ORIGINAL full page.
-      setRecipeImagePreview(croppedPreview);
+      // The actual image data is stored as a data URL instead.
+      const reader = new FileReader();
 
-      setIsRecipeImageCropped(true);
+      reader.onloadend = () => {
+        const croppedDataUrl = reader.result;
 
-      setErrorMessage("");
+        if (typeof croppedDataUrl !== "string" || !croppedDataUrl) {
+          setErrorMessage("Unable to save the cropped image.");
+          return;
+        }
 
-      handleCloseCrop();
+        // If the previous preview was a temporary blob URL,
+        // clean it up before replacing it.
+        if (recipeImagePreview?.startsWith("blob:")) {
+          URL.revokeObjectURL(recipeImagePreview);
+        }
+
+        // Save the ACTUAL image data, not a temporary blob URL.
+        setRecipeImagePreview(croppedDataUrl);
+
+        setIsRecipeImageCropped(true);
+
+        setErrorMessage("");
+
+        handleCloseCrop();
+      };
+
+      reader.readAsDataURL(blob);
     }, "image/png");
   };
 
