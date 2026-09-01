@@ -277,15 +277,17 @@ export default function RecipeScanner({ onSaveRecipe }) {
   //
   // MOBILE-SAFE IMAGE PREPARATION
   //
-  // Phone cameras can produce extremely large images.
+  // Phones can handle image files differently from desktop browsers.
   //
-  // Instead of fully decoding a giant image and THEN resizing it,
-  // createImageBitmap() lets the browser handle the image more efficiently.
+  // We first try createImageBitmap(), which is efficient for large images.
+  // If the phone cannot decode the image that way, we automatically fall
+  // back to the traditional FileReader + Image method.
   //
-  // The entire recipe page is preserved for OCR.
-  // We are only reducing the resolution of the OCR copy.
+  // This gives the scanner two ways to prepare an image instead of depending
+  // on one browser implementation.
   //
-  // The cropped recipe image is completely separate.
+  // The full recipe page is preserved for OCR.
+  // The image is only resized to make processing easier on mobile devices.
   //
 
   const imageToBase64 = async (file) => {
@@ -295,110 +297,211 @@ export default function RecipeScanner({ onSaveRecipe }) {
 
     const maxDimension = 1800;
 
-    let bitmap;
+    // ============================== Method 1 ==============================
+    // Try createImageBitmap first.
+    //
+    // This is generally efficient for large camera images.
+    // If the browser cannot decode the image this way, we fall back
+    // to the traditional image-loading method below.
 
     try {
-      // Decode the image.
-      //
-      // createImageBitmap is generally more memory-friendly for large
-      // camera images on modern mobile browsers.
-      bitmap = await createImageBitmap(file);
-    } catch (error) {
-      console.error("Mobile image decode failed:", {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        error,
-      });
+      if ("createImageBitmap" in window) {
+        const bitmap = await createImageBitmap(file);
 
-      throw new Error(`The phone could not decode "${file.name}" for scanning.`);
-    }
+        try {
+          let width = bitmap.width;
+          let height = bitmap.height;
 
-    try {
-      let width = bitmap.width;
-      let height = bitmap.height;
+          // Keep the image proportional while reducing very large images.
+          if (width > maxDimension || height > maxDimension) {
+            if (width >= height) {
+              height = Math.round((height / width) * maxDimension);
+              width = maxDimension;
+            } else {
+              width = Math.round((width / height) * maxDimension);
+              height = maxDimension;
+            }
+          }
 
-      // Calculate the correct proportional size.
-      if (width > maxDimension || height > maxDimension) {
-        if (width >= height) {
-          height = Math.round((height / width) * maxDimension);
-          width = maxDimension;
-        } else {
-          width = Math.round((width / height) * maxDimension);
-          height = maxDimension;
+          const canvas = document.createElement("canvas");
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const context = canvas.getContext("2d");
+
+          if (!context) {
+            throw new Error("Unable to create the image canvas.");
+          }
+
+          context.drawImage(bitmap, 0, 0, width, height);
+
+          const base64String = await new Promise((resolve, reject) => {
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) {
+                  reject(new Error("Unable to create the scanning image."));
+                  return;
+                }
+
+                const reader = new FileReader();
+
+                reader.onload = () => {
+                  const result = reader.result;
+
+                  if (typeof result !== "string") {
+                    reject(new Error("The prepared image could not be read."));
+                    return;
+                  }
+
+                  const commaIndex = result.indexOf(",");
+
+                  if (commaIndex === -1) {
+                    reject(new Error("The prepared image had an invalid format."));
+                    return;
+                  }
+
+                  resolve(result.slice(commaIndex + 1));
+                };
+
+                reader.onerror = () => {
+                  reject(new Error("Unable to read the prepared image."));
+                };
+
+                reader.readAsDataURL(blob);
+              },
+              "image/jpeg",
+              0.85,
+            );
+          });
+
+          // Release canvas memory.
+          canvas.width = 1;
+          canvas.height = 1;
+
+          return base64String;
+        } finally {
+          // Always release the decoded bitmap.
+          bitmap.close();
         }
       }
+    } catch (bitmapError) {
+      // Do NOT stop the scanner here.
+      //
+      // Some mobile browsers may fail with createImageBitmap even though
+      // they can successfully display and process the same image another way.
 
-      const canvas = document.createElement("canvas");
+      console.warn("createImageBitmap failed. Trying traditional image loading instead:", bitmapError);
+    }
 
-      canvas.width = width;
-      canvas.height = height;
+    // ============================== Method 2 ==============================
+    // Traditional FileReader + Image fallback.
+    //
+    // This is the more widely compatible browser method.
+    // It gives Android Chrome another way to process the image.
 
-      const context = canvas.getContext("2d");
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
 
-      if (!context) {
-        throw new Error("Unable to prepare the image for scanning.");
-      }
+      reader.onload = () => {
+        const image = new Image();
 
-      // Draw the COMPLETE recipe page.
-      context.drawImage(bitmap, 0, 0, width, height);
+        image.onload = async () => {
+          try {
+            let width = image.naturalWidth;
+            let height = image.naturalHeight;
 
-      // We no longer need the decoded bitmap.
-      bitmap.close();
-
-      const base64String = await new Promise((resolve, reject) => {
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error("Unable to create the scanning image."));
-              return;
+            if (!width || !height) {
+              throw new Error("The selected image has invalid dimensions.");
             }
 
-            const reader = new FileReader();
-
-            reader.onload = () => {
-              const result = reader.result;
-
-              if (typeof result !== "string") {
-                reject(new Error("The prepared image could not be read."));
-                return;
+            // Keep the image proportional.
+            if (width > maxDimension || height > maxDimension) {
+              if (width >= height) {
+                height = Math.round((height / width) * maxDimension);
+                width = maxDimension;
+              } else {
+                width = Math.round((width / height) * maxDimension);
+                height = maxDimension;
               }
+            }
 
-              const commaIndex = result.indexOf(",");
+            const canvas = document.createElement("canvas");
 
-              if (commaIndex === -1) {
-                reject(new Error("The prepared image had an invalid format."));
-                return;
-              }
+            canvas.width = width;
+            canvas.height = height;
 
-              resolve(result.slice(commaIndex + 1));
-            };
+            const context = canvas.getContext("2d");
 
-            reader.onerror = () => {
-              reject(new Error("Unable to read the prepared image."));
-            };
+            if (!context) {
+              throw new Error("Unable to create the image canvas.");
+            }
 
-            reader.readAsDataURL(blob);
-          },
-          "image/jpeg",
-          0.85,
-        );
-      });
+            // Draw the complete recipe page.
+            context.drawImage(image, 0, 0, width, height);
 
-      // Release canvas memory as soon as we're finished.
-      canvas.width = 1;
-      canvas.height = 1;
+            const base64String = await new Promise((resolveBlob, rejectBlob) => {
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) {
+                    rejectBlob(new Error("Unable to create the scanning image."));
+                    return;
+                  }
 
-      return base64String;
-    } catch (error) {
-      try {
-        bitmap.close();
-      } catch {
-        // Bitmap was already released.
-      }
+                  const blobReader = new FileReader();
 
-      throw error;
-    }
+                  blobReader.onload = () => {
+                    const result = blobReader.result;
+
+                    if (typeof result !== "string") {
+                      rejectBlob(new Error("The prepared image could not be read."));
+                      return;
+                    }
+
+                    const commaIndex = result.indexOf(",");
+
+                    if (commaIndex === -1) {
+                      rejectBlob(new Error("The prepared image had an invalid format."));
+                      return;
+                    }
+
+                    resolveBlob(result.slice(commaIndex + 1));
+                  };
+
+                  blobReader.onerror = () => {
+                    rejectBlob(new Error("Unable to read the prepared image."));
+                  };
+
+                  blobReader.readAsDataURL(blob);
+                },
+                "image/jpeg",
+                0.85,
+              );
+            });
+
+            // Release canvas memory.
+            canvas.width = 1;
+            canvas.height = 1;
+
+            resolve(base64String);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        image.onerror = () => {
+          reject(new Error(`The browser could not decode "${file.name}" for scanning.`));
+        };
+
+        image.src = reader.result;
+      };
+
+      reader.onerror = () => {
+        reject(new Error(`The browser could not read "${file.name}" for scanning.`));
+      };
+
+      reader.readAsDataURL(file);
+    });
   };
 
   // ============================== Scan Recipe ==============================
