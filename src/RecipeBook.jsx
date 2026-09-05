@@ -2,10 +2,31 @@ import { useMemo, useState } from "react";
 
 // ============================== Recipe Book ==============================
 
-export default function RecipeBook({ recipeSearch, setRecipeSearch, filtered, scrollToTop, recipes, setRecipes, setActiveRecipe }) {
+export default function RecipeBook({
+  recipeSearch,
+  setRecipeSearch,
+  filtered,
+  scrollToTop,
+  recipes,
+  setRecipes,
+  setActiveRecipe,
+  recipesLoading,
+  mealTimeFilter,
+  setMealTimeFilter,
+  foodTypeFilter,
+  setFoodTypeFilter,
+}) {
   // ============================== Recipe Book Data ==============================
 
-  const bookRecipes = filtered.filter((recipe) => recipe.name.toLowerCase().includes(recipeSearch.toLowerCase()));
+  const bookRecipes = filtered.filter((recipe) => {
+    const searchText = recipeSearch.toLowerCase().trim();
+
+    if (!searchText) return true;
+
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients.join(" ") : recipe.ingredients || "";
+
+    return `${recipe.name || ""} ${ingredients} ${recipe.category || ""}`.toLowerCase().includes(searchText);
+  });
 
   const [recipePage, setRecipePage] = useState(0);
 
@@ -21,8 +42,24 @@ export default function RecipeBook({ recipeSearch, setRecipeSearch, filtered, sc
 
   // ============================== Recipe Images ==============================
 
+  // ============================== Recipe Images ==============================
+  //
+  // Some older recipes have a "blob:" image saved in Supabase.
+  // Those blob URLs are temporary and cannot be restored after a refresh.
+  //
+  // Instead of trying to display a broken blob image, treat it as
+  // a missing image so the normal scrapbook placeholder appears.
+
   const getRecipeImage = (recipe) => {
-    return recipe?.image || recipe?.imageUrl || recipe?.photo || recipe?.images?.[0] || null;
+    const image = recipe?.image || recipe?.imageUrl || recipe?.photo || recipe?.images?.[0] || null;
+
+    // Blob URLs are temporary browser URLs.
+    // If one was saved accidentally, ignore it and use the placeholder.
+    if (typeof image === "string" && image.startsWith("blob:")) {
+      return null;
+    }
+
+    return image;
   };
 
   // ============================== Placeholder Choices ==============================
@@ -135,15 +172,73 @@ export default function RecipeBook({ recipeSearch, setRecipeSearch, filtered, sc
 
       <h2 className="recipe-book-title">📖 Recipe Book</h2>
 
-      {/* ============================== Recipe Search ============================== */}
+      {/* ============================== Recipe Search + Filters ============================== */}
 
-      <input
-        className="recipe-book-search"
-        type="text"
-        placeholder="Search recipes..."
-        value={recipeSearch}
-        onChange={(e) => setRecipeSearch(e.target.value)} // Update the recipe search.
-      />
+      <div className="recipe-book-controls">
+        {/* Recipe name search */}
+        <input
+          className="recipe-book-search"
+          type="text"
+          placeholder="Search recipes..."
+          value={recipeSearch}
+          onChange={(e) => {
+            setRecipeSearch(e.target.value);
+
+            // Start the scrapbook back at the first spread
+            // whenever the search changes.
+            setRecipePage(0);
+          }}
+        />
+
+        {/* Meal Time Filter */}
+        <select
+          className="recipe-book-filter"
+          value={mealTimeFilter}
+          onChange={(e) => {
+            setMealTimeFilter(e.target.value);
+            setRecipePage(0);
+          }}
+          aria-label="Filter recipes by meal time"
+        >
+          <option value="All">🍽️ All Meal Times</option>
+          <option value="Breakfast">🌅 Breakfast</option>
+          <option value="Lunch">🥪 Lunch</option>
+          <option value="Dinner">🍽️ Dinner</option>
+          <option value="Dessert">🍰 Dessert</option>
+          <option value="Snack">🍿 Snack</option>
+        </select>
+
+        {/* Food Type Filter */}
+        <select
+          className="recipe-book-filter"
+          value={foodTypeFilter}
+          onChange={(e) => {
+            setFoodTypeFilter(e.target.value);
+            setRecipePage(0);
+          }}
+          aria-label="Filter recipes by food type"
+        >
+          <option value="All">🥘 All Food Types</option>
+          <option value="Chicken">🍗 Chicken</option>
+          <option value="Beef">🥩 Beef</option>
+          <option value="Pork">🥓 Pork</option>
+          <option value="Seafood">🦐 Seafood</option>
+          <option value="Pasta">🍝 Pasta</option>
+          <option value="Vegetarian">🥦 Vegetarian</option>
+          <option value="Dessert">🍰 Sweets & Dessert</option>
+          <option value="Other">🍴 Other</option>
+        </select>
+      </div>
+
+      {recipesLoading && (
+        <div className="recipe-book-loading">
+          <div className="recipe-book-loading-spinner"></div>
+
+          <strong>Loading your recipes...</strong>
+
+          <span>Please wait while your recipes load.</span>
+        </div>
+      )}
       {/* ============================== Mobile Recipe Notes ============================== */}
 
       <div className="mobile-recipe-book">
@@ -169,7 +264,18 @@ export default function RecipeBook({ recipeSearch, setRecipeSearch, filtered, sc
                 <img src={getRecipeImage(recipe)} alt={recipe.name} className="mobile-recipe-note-image" />
               ) : (
                 <div className="mobile-recipe-note-placeholder">
-                  <span>{placeholderChoices[Math.floor(Math.random() * placeholderChoices.length)].emoji}</span>
+                  <span>
+                    {
+                      placeholderChoices[
+                        recipe.id
+                          ? recipe.id
+                              .toString()
+                              .split("")
+                              .reduce((total, char) => total + char.charCodeAt(0), 0) % placeholderChoices.length
+                          : 0
+                      ].emoji
+                    }
+                  </span>
                 </div>
               )}
               {recipe.ingredients?.length > 0 && (

@@ -32,29 +32,66 @@ export default function Planner({
       return;
     }
 
-    const randomIndex = Math.floor(Math.random() * recipes.length);
-    setRandomRecipe(recipes[randomIndex]);
+    // Start with every recipe in the Recipe Book.
+    let matchingRecipes = [...recipes];
+
+    // If the user selected meats, only keep recipes
+    // that contain at least ONE of those meats.
+    if (selectedMeats.length > 0) {
+      matchingRecipes = matchingRecipes.filter((recipe) => {
+        const recipeText = [recipe.name, recipe.category, recipe.ingredients].flat(Infinity).filter(Boolean).join(" ").toLowerCase();
+
+        return selectedMeats.some((meat) => recipeText.includes(meat.toLowerCase()));
+      });
+    }
+
+    // No recipes matched the selected meats.
+    if (matchingRecipes.length === 0) {
+      setRandomRecipe(null);
+      setRandomizerMessage("I couldn't find a recipe that matches those choices. Try another meat!");
+      return;
+    }
+
+    // Pick one recipe randomly from ONLY the matching recipes.
+    const randomIndex = Math.floor(Math.random() * matchingRecipes.length);
+
+    setRandomRecipe(matchingRecipes[randomIndex]);
     setRandomizerMessage("");
   };
 
   const rerollRecipe = () => {
     if (!recipes || recipes.length === 0) return;
 
-    if (recipes.length === 1) {
-      setRandomRecipe(recipes[0]);
+    // Start with every recipe in the Recipe Book.
+    let matchingRecipes = [...recipes];
+
+    // Apply the same meat filter used by "Find Me a Recipe".
+    if (selectedMeats.length > 0) {
+      matchingRecipes = matchingRecipes.filter((recipe) => {
+        const recipeText = [recipe.name, recipe.category, recipe.ingredients].flat(Infinity).filter(Boolean).join(" ").toLowerCase();
+
+        return selectedMeats.some((meat) => recipeText.includes(meat.toLowerCase()));
+      });
+    }
+
+    // Nothing matches the selected meat.
+    if (matchingRecipes.length === 0) {
+      setRandomRecipe(null);
+      setRandomizerMessage("I couldn't find another recipe that matches those choices.");
       return;
     }
 
-    let randomIndex = Math.floor(Math.random() * recipes.length);
-    let newRecipe = recipes[randomIndex];
-
-    // Try to avoid immediately showing the exact same recipe.
-    while (newRecipe.name === randomRecipe?.name) {
-      randomIndex = Math.floor(Math.random() * recipes.length);
-      newRecipe = recipes[randomIndex];
+    // If there is more than one matching recipe,
+    // try not to show the exact same recipe again.
+    if (matchingRecipes.length > 1 && randomRecipe) {
+      matchingRecipes = matchingRecipes.filter((recipe) => recipe.name !== randomRecipe.name);
     }
 
-    setRandomRecipe(newRecipe);
+    // Pick another recipe from the filtered results.
+    const randomIndex = Math.floor(Math.random() * matchingRecipes.length);
+
+    setRandomRecipe(matchingRecipes[randomIndex]);
+    setRandomizerMessage("");
   };
 
   const saveRandomToDay = () => {
@@ -71,6 +108,17 @@ export default function Planner({
     setRandomRecipe(null);
     setRandomizerMessage("");
   };
+
+  const [randomMealType, setRandomMealType] = useState("Any");
+  const [selectedMeats, setSelectedMeats] = useState([]);
+
+  // ==============================
+  // Randomizer Choices
+  // ==============================
+
+  const mealTypes = ["Any", "Breakfast", "Lunch", "Dinner"];
+
+  const meatTypes = ["Chicken", "Beef", "Pork", "Turkey", "Seafood", "Eggs"];
 
   // ==============================
   // Current Day Recipes
@@ -157,9 +205,49 @@ export default function Planner({
         </div>
 
         {!randomRecipe && (
-          <button className="planner-random-pick-button" onClick={pickRandomRecipe}>
-            🎲 Pick Something For Me
-          </button>
+          <div className="planner-randomizer-options">
+            {/* ==============================
+                Meat Options
+            ============================== */}
+
+            <div className="planner-randomizer-filter">
+              <h4>🥩 What meat do you have/have out?</h4>
+
+              <p className="planner-randomizer-help">Choose as many as you have.</p>
+
+              <div className="planner-randomizer-choice-buttons">
+                {meatTypes.map((meat) => {
+                  const selected = selectedMeats.includes(meat);
+
+                  return (
+                    <button
+                      key={meat}
+                      type="button"
+                      className={`planner-randomizer-choice ${selected ? "selected" : ""}`}
+                      onClick={() => {
+                        setSelectedMeats((current) => (selected ? current.filter((item) => item !== meat) : [...current, meat]));
+                      }}
+                    >
+                      {selected ? "✓ " : ""}
+                      {meat}
+                    </button>
+                  );
+                })}
+
+                <button type="button" className="planner-randomizer-choice" onClick={() => setSelectedMeats([])}>
+                  Any Meat
+                </button>
+              </div>
+            </div>
+
+            {/* ==============================
+                Find Recipe
+            ============================== */}
+
+            <button className="planner-random-pick-button" onClick={pickRandomRecipe}>
+              🎲 Find Me a Recipe
+            </button>
+          </div>
         )}
 
         {randomRecipe && (

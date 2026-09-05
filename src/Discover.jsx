@@ -11,13 +11,9 @@ export default function Discover({ search, setSearch, apiRecipes, scrollToTop, s
 
       {/* ============================== Recipe Search ============================== */}
 
-      <input
-        className="discover-search"
-        type="text"
-        placeholder="Search recipes..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)} // Update the search text as the user types.
-      />
+      <div className="discover-search-container">
+        <input className="discover-search" type="text" placeholder="Search recipes..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
 
       {/* ============================== Discover Recipes ============================== */}
 

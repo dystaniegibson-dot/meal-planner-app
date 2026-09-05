@@ -427,9 +427,10 @@ body {
 
 .recipe-book-wrapper {
   background: transparent !important;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
 }
 
 /* ====================================
@@ -554,10 +555,11 @@ body {
 }
 
 .planned-meals-card {
-  background: #fff8f6;
+  background: var(--theme-sidebar) !important;
   border-radius: 24px;
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--theme-hover);
 }
 
 .planned-meal-row {
@@ -565,6 +567,7 @@ body {
   justify-content: space-between;
   padding: 10px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom-color: var(--theme-hover);
 }
 
 .planned-meal-name {
@@ -606,16 +609,17 @@ body {
 
 .discover-search {
   width: 100%;
-  background: #fff8f6;
+  background: var(--theme-sidebar) !important;
   border: 1px solid var(--theme-hover);
   padding: 12px;
   margin-bottom: 15px;
   border-radius: 14px;
   font-size: 15px;
   outline: none;
-  color: #2f2f2f;
+  color: var(--theme-text) !important;
   caret-color: var(--theme-accent);
   box-sizing: border-box;
+  border-color: var(--theme-accent) !important;
 }
 
 /* ============================== Discover Grid ============================== */
@@ -632,17 +636,18 @@ body {
 .discover-recipe-card {
   cursor: pointer;
   transition: 0.2s;
-  background: #fff8f6;
+  background: var(--theme-sidebar) !important;
   padding: 18px;
   margin-bottom: 18px;
   border-radius: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.6);
+  border-color: var(--theme-hover) !important;
 }
 
 .discover-recipe-title {
   cursor: pointer;
-  color: var(--theme-accent);
+  color: var(--theme-accent) !important;
   font-size: 24px;
   margin-bottom: 12px;
 }
@@ -712,13 +717,14 @@ body {
 
 .new-recipe-page input:focus,
 .new-recipe-page textarea:focus {
-  border-color: var(--theme-accent);
-  box-shadow: 0 0 0 3px rgba(229, 139, 136, 0.15);
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 0 0 3px var(--theme-hover) !important;
 }
 
 .new-recipe-page input::placeholder,
 .new-recipe-page textarea::placeholder {
-  color: #a88984;
+  color: var(--theme-text) !important;
+  opacity: 0.65;
 }
 
 /* ============================== Recipe Text Box ============================== */
@@ -780,18 +786,28 @@ body {
 
 .recipe-crop-image-container {
   position: relative;
-  display: inline-block;
-  max-width: 100%;
+  display: block;
+  max-width: 900px;
   touch-action: none;
   user-select: none;
+  width: 100%;
+  max-height: 70vh;
+  margin: 0 auto;
+  cursor: crosshair;
+  overflow: hidden;
 }
 
 .recipe-crop-image {
   display: block;
-  width: auto;
+  width: 100%;
   height: auto;
-  max-width: 400px;
-  max-height: 400px;
+  max-width: 900px;
+  max-height: 70vh;
+  object-fit: contain;
+  margin: 0 auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 @media (max-width: 600px) {
@@ -805,7 +821,7 @@ body {
   position: absolute;
   box-sizing: border-box;
   border: 3px solid white;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
   pointer-events: none;
 }
 
@@ -1054,11 +1070,12 @@ body {
   padding: 12px 20px;
   border-radius: 14px;
   border: 1px solid #d9aaa0;
-  background: #fff8f6;
-  color: var(--theme-accent);
+  background: var(--theme-sidebar) !important;
+  color: var(--theme-accent) !important;
   cursor: pointer;
   font-weight: bold;
   font-size: 15px;
+  border-color: var(--theme-accent) !important;
 }
 
 /* ============================== Existing Text Input Rule ============================== */
@@ -1101,14 +1118,15 @@ body {
   width: 330px;
   margin: 0 auto -7px;
   box-sizing: border-box;
-  background: #fffaf5;
+  background: var(--theme-sidebar) !important;
   border: 2px solid #efd0c7;
   border-radius: 25px;
   padding: 12px 18px;
   font-size: 15px;
-  color: #362724;
+  color: #362724 !important;
   box-shadow: 0 3px 10px rgba(124, 74, 69, 0.08);
   outline: none;
+  border-color: var(--theme-accent) !important;
 }
 
 /* ========================================
@@ -1318,15 +1336,6 @@ body {
 }
 
 .empty-recipe-memo strong {
-  font-size: 12px;
-}
-
-.empty-recipe-memo span {
-  font-size: 10px;
-  line-height: 1.15;
-}
-
-.empty-recipe-memo strong {
   font-size: 17px;
 }
 
@@ -1525,14 +1534,6 @@ body {
    The scrapbook image itself remains untouched.
 */
 
-.recipe-book-wrapper {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  border-radius: 0 !important;
-}
-
 /* ========================================
    MOBILE
 ======================================== */
@@ -1699,7 +1700,7 @@ body {
 }
 
 .planner-search:focus {
-  border-color: var(--theme-accent);
+  border-color: var(--theme-accent) !important;
   box-shadow: 0 0 0 3px rgba(217, 155, 145, 0.15);
 }
 
@@ -1728,9 +1729,10 @@ body {
   gap: 10px;
   padding: 10px;
   margin-bottom: 8px;
-  background: var(--theme-hover);
+  background: var(--theme-hover) !important;
   border: 1px solid var(--theme-accent);
   border-radius: 14px;
+  border-color: var(--theme-accent) !important;
 }
 
 .planner-planned-recipe-name {
@@ -1784,7 +1786,7 @@ body {
 }
 
 .planner-available-recipe:hover {
-  background: var(--theme-hover);
+  background: var(--theme-hover) !important;
   transform: translateX(2px);
 }
 
@@ -1998,7 +2000,7 @@ body {
 /* ============================== Duplicate Message ============================== */
 
 .grocery-duplicate-message {
-  background: var(--theme-accent);
+  background: var(--theme-accent) !important;
   color: white;
   border-radius: 18px;
   padding: 14px 20px;
@@ -2009,16 +2011,18 @@ body {
   font-weight: bold;
   box-shadow: 0 5px 15px rgba(80, 55, 40, 0.2);
   border: 2px solid var(--theme-accent);
+  border-color: var(--theme-accent) !important;
 }
 
 /* ============================== Shopping List ============================== */
 
 .grocery-list-container {
-  background: #fffaf7;
+  background: var(--theme-sidebar) !important;
   border: 1px solid var(--theme-hover);
   border-radius: 24px;
   padding: 14px;
   box-shadow: 0 5px 14px rgba(100, 70, 45, 0.08);
+  border-color: var(--theme-hover) !important;
 }
 
 /* ============================== Section Title ============================== */
@@ -2075,14 +2079,15 @@ body {
   gap: 10px;
   margin-bottom: 8px;
   padding: 10px 12px;
-  background: #fffdfb;
+  background: var(--theme-sidebar) !important;
   border: 1px solid var(--theme-hover);
   border-radius: 16px;
   transition: background 0.2s ease;
+  border-color: var(--theme-hover) !important;
 }
 
 .grocery-item-checked {
-  background: #fff8f6;
+  background: var(--theme-hover) !important;
 }
 
 /* ============================== Grocery Item Name ============================== */
@@ -2108,8 +2113,8 @@ body {
   border-radius: 50%;
   width: 34px;
   height: 34px;
-  background: #f3e4df;
-  color: var(--theme-accent);
+  background: var(--theme-hover) !important;
+  color: var(--theme-accent) !important;
   cursor: pointer;
   font-size: 20px;
   line-height: 1;
@@ -2120,7 +2125,8 @@ body {
 }
 
 .grocery-menu-button:hover {
-  background: var(--theme-hover);
+  background: var(--theme-accent) !important;
+  color: white !important;
 }
 
 /* ============================== Options Menu ============================== */
@@ -2131,11 +2137,12 @@ body {
   top: 48px;
   z-index: 50;
   width: 210px;
-  background: #fffaf7;
+  background: var(--theme-sidebar) !important;
   border: 1px solid var(--theme-hover);
   border-radius: 16px;
   padding: 8px;
   box-shadow: 0 8px 22px rgba(80, 55, 40, 0.18);
+  border-color: var(--theme-hover) !important;
 }
 
 /* ============================== Option Buttons ============================== */
@@ -2153,7 +2160,7 @@ body {
 }
 
 .grocery-option-button:hover {
-  background: var(--theme-hover);
+  background: var(--theme-hover) !important;
 }
 
 .grocery-option-remove {
@@ -2172,25 +2179,27 @@ body {
   padding: 9px 16px;
   border-radius: 14px;
   border: 1px solid var(--theme-hover);
-  background: #fff8f6;
-  color: #8a665e;
+  background: var(--theme-sidebar) !important;
+  color: var(--theme-accent) !important;
   cursor: pointer;
   font-size: 14px;
+  border-color: var(--theme-accent) !important;
 }
 
 .grocery-clear-button:hover {
-  background: var(--theme-hover);
+  background: var(--theme-hover) !important;
 }
 
 /* ============================== Don't Forget ============================== */
 
 .grocery-dont-forget {
-  background: #fff8f3;
+  background: var(--theme-sidebar) !important;
   border: 1px solid var(--theme-hover);
   border-radius: 24px;
   padding: 14px;
   margin-top: 25px;
   box-shadow: 0 5px 14px rgba(100, 70, 45, 0.08);
+  border-color: var(--theme-hover) !important;
 }
 
 .grocery-dont-forget-description {
@@ -2205,11 +2214,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fffdfb;
+  background: var(--theme-hover) !important;
   border: 1px solid var(--theme-hover);
   border-radius: 16px;
   padding: 8px 12px;
   margin-bottom: 6px;
+  border-color: var(--theme-accent) !important;
 }
 
 /* ============================== Don't Forget Name ============================== */
@@ -2235,7 +2245,7 @@ body {
   border-radius: 50%;
   width: 32px;
   height: 32px;
-  background: var(--theme-accent);
+  background: var(--theme-accent) !important;
   color: white;
   cursor: pointer;
   font-size: 16px;
@@ -2361,11 +2371,6 @@ body {
 .signin-card {
   position: relative;
   z-index: 1;
-}
-
-/* ============================== Sign In Card ============================== */
-
-.signin-card {
   width: 100%;
   max-width: 430px;
   padding: 38px 36px;
@@ -2378,6 +2383,8 @@ body {
     0 2px 8px rgba(100, 70, 45, 0.05);
   text-align: left;
 }
+
+/* ============================== Sign In Card ============================== */
 
 /* ============================== Branding ============================== */
 
@@ -2856,43 +2863,46 @@ section > h1 {
    HOME - PLANNED MEALS
    ============================== */
 
-.planned-meals-card {
-  background: var(--theme-sidebar) !important;
-  border: 1px solid var(--theme-hover);
-}
-
-.planned-meal-row {
-  border-bottom-color: var(--theme-hover);
-}
-
 /* ==============================
    DISCOVER - SEARCH + RECIPE TILES
    ============================== */
-
-.discover-search {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-accent) !important;
-  color: var(--theme-text) !important;
-}
 
 .discover-search:focus {
   border-color: var(--theme-accent) !important;
   box-shadow: 0 0 0 3px var(--theme-hover) !important;
 }
 
-.discover-recipe-card {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-hover) !important;
-}
-
 .discover-recipe-card:hover {
   background: var(--theme-hover) !important;
 }
 
-.discover-recipe-title {
-  color: var(--theme-accent) !important;
+/* ============================== Sticky Discover Search ============================== */
+
+/*
+   Keeps Discover search available while scrolling
+   through the recipe results.
+*/
+
+.discover-search-container {
+  position: sticky;
+  top: 10px;
+  z-index: 20;
+
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 8px;
+
+  box-sizing: border-box;
+
+  background: rgba(255, 250, 245, 0.94);
+  backdrop-filter: blur(8px);
+
+  border-radius: 18px;
 }
 
+.discover-search-container .discover-search {
+  margin-bottom: 0;
+}
 /* ==============================
    NEW RECIPE - INPUTS
    ============================== */
@@ -2905,18 +2915,6 @@ section > h1 {
   border-color: var(--theme-accent) !important;
 }
 
-.new-recipe-page input:focus,
-.new-recipe-page textarea:focus {
-  border-color: var(--theme-accent) !important;
-  box-shadow: 0 0 0 3px var(--theme-hover) !important;
-}
-
-.new-recipe-page input::placeholder,
-.new-recipe-page textarea::placeholder {
-  color: var(--theme-text) !important;
-  opacity: 0.65;
-}
-
 /* ==============================
    NEW RECIPE - BUTTONS
    ============================== */
@@ -2924,12 +2922,6 @@ section > h1 {
 .auto-fill-button,
 .save-recipe-button {
   background: var(--theme-accent) !important;
-}
-
-.clear-recipe-button {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-accent) !important;
-  color: var(--theme-accent) !important;
 }
 
 .clear-recipe-button:hover {
@@ -2943,44 +2935,75 @@ section > h1 {
    are intentionally NOT touched.
    ============================== */
 
-.recipe-book-search {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-accent) !important;
-  color: #362724 !important;
-}
-
 .recipe-book-search:focus {
   border-color: var(--theme-accent) !important;
   box-shadow: 0 3px 10px var(--theme-hover) !important;
 }
 
+/* ============================== Recipe Book Controls ============================== */
+
+/*
+   Keeps the search and category filters available
+   while the user scrolls through the Recipe Book.
+*/
+
+.recipe-book-controls {
+  position: sticky;
+  top: 10px;
+  z-index: 20;
+
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  margin: 0 auto 18px;
+  padding: 8px;
+
+  box-sizing: border-box;
+
+  background: rgba(255, 250, 245, 0.94);
+  backdrop-filter: blur(8px);
+
+  border-radius: 18px;
+}
+
+/* The search box stays the same size visually. */
+.recipe-book-controls .recipe-book-search {
+  width: 330px;
+  margin: 0;
+}
+
+/* Category dropdowns */
+.recipe-book-filter {
+  box-sizing: border-box;
+
+  padding: 11px 14px;
+
+  border: 2px solid #efd0c7;
+  border-radius: 22px;
+
+  background: #fffaf5;
+  color: #362724;
+
+  font-size: 14px;
+  font-family: Georgia, "Times New Roman", serif;
+
+  outline: none;
+  cursor: pointer;
+
+  box-shadow: 0 3px 10px rgba(124, 74, 69, 0.08);
+}
+
+.recipe-book-filter:focus {
+  border-color: var(--theme-accent);
+}
+
 /* ==============================
    GROCERY - MAIN CONTAINERS
    ============================== */
-
-.grocery-list-container {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-hover) !important;
-}
-
-.grocery-dont-forget {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-hover) !important;
-}
-
-.grocery-dont-forget-item {
-  background: var(--theme-hover) !important;
-  border-color: var(--theme-accent) !important;
-}
-
-.grocery-item-row {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-hover) !important;
-}
-
-.grocery-item-checked {
-  background: var(--theme-hover) !important;
-}
 
 /* ==============================
    GROCERY - SEARCH / ADD INPUT
@@ -3011,69 +3034,18 @@ section > h1 {
    GROCERY - BUTTONS
    ============================== */
 
-.grocery-menu-button {
-  background: var(--theme-hover) !important;
-  color: var(--theme-accent) !important;
-}
-
-.grocery-menu-button:hover {
-  background: var(--theme-accent) !important;
-  color: white !important;
-}
-
-.grocery-dont-forget-add {
-  background: var(--theme-accent) !important;
-}
-
-.grocery-clear-button {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-accent) !important;
-  color: var(--theme-accent) !important;
-}
-
-.grocery-clear-button:hover {
-  background: var(--theme-hover) !important;
-}
-
 /* ==============================
    GROCERY - OPTIONS MENU
    ============================== */
-
-.grocery-options-menu {
-  background: var(--theme-sidebar) !important;
-  border-color: var(--theme-hover) !important;
-}
-
-.grocery-option-button:hover {
-  background: var(--theme-hover) !important;
-}
 
 /* ==============================
    GROCERY - DUPLICATE MESSAGE
    ============================== */
 
-.grocery-duplicate-message {
-  background: var(--theme-accent) !important;
-  border-color: var(--theme-accent) !important;
-}
-
 /* ==============================
    PLANNER - KEEP EVERYTHING
    CURRENTLY WORKING
    ============================== */
-
-.planner-search:focus {
-  border-color: var(--theme-accent) !important;
-}
-
-.planner-planned-recipe {
-  background: var(--theme-hover) !important;
-  border-color: var(--theme-accent) !important;
-}
-
-.planner-available-recipe:hover {
-  background: var(--theme-hover) !important;
-}
 
 /* ==============================
    SIDEBAR ACTIVE BUTTON
@@ -3241,7 +3213,13 @@ section > h1 {
   .recipe-book-page > h2 {
     font-size: 32px !important;
   }
-  .recipe-book-page > input {
+  .recipe-book-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .recipe-book-controls .recipe-book-search,
+  .recipe-book-filter {
     width: 100% !important;
   }
   .open-recipe-book {
@@ -3454,7 +3432,78 @@ section > h1 {
 
   /* ============================== Recipe Book ============================== */
 
+  /* ============================== Recipe Book Loading ============================== */
+
+  /*
+  Small loading message for the Recipe Book.
+
+  It stays inside the Recipe Book area instead of creating
+  a giant white section or hiding the entire scrapbook.
+*/
+
   .recipe-book-page {
+    position: relative;
+  }
+
+  /* ============================== Recipe Book Loading ============================== */
+
+  .recipe-book-loading {
+    position: absolute;
+
+    /* Sit over the recipe book without pushing anything down. */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 100;
+
+    /* Do NOT use min-height here.
+     The loading message overlays the existing recipe book. */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 14px;
+    text-align: center;
+
+    /* Light overlay so the recipe book remains visible underneath. */
+    background: rgba(255, 250, 245, 0.7);
+
+    border-radius: 12px;
+
+    /* Prevent the loading layer from affecting the layout underneath. */
+    pointer-events: none;
+  }
+
+  /* Loading spinner */
+
+  .recipe-book-loading-spinner {
+    width: 38px;
+    height: 38px;
+
+    border: 4px solid currentColor;
+    border-top-color: transparent;
+
+    border-radius: 50%;
+
+    animation: recipe-book-spin 0.8s linear infinite;
+  }
+
+  .recipe-book-loading span {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  @keyframes recipe-book-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .recipe-book-page {
+    position: relative;
     padding: 10px 12px 30px;
   }
 
@@ -3538,6 +3587,59 @@ section > h1 {
   }
 }
 
+/* ============================== Recipe Book Loading ============================== */
+
+.recipe-book-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  text-align: center;
+
+  background: rgba(255, 255, 255, 0.95);
+
+  border-radius: inherit;
+}
+
+.recipe-book-loading-overlay strong {
+  font-size: 1.25rem;
+}
+
+.recipe-book-loading-overlay span {
+  font-size: 1rem;
+}
+
+.recipe-book-loading-overlay small {
+  font-size: 0.9rem;
+}
+
+/* ============================== Loading Spinner ============================== */
+
+.recipe-book-loading-spinner {
+  width: 48px;
+  height: 48px;
+
+  border: 5px solid currentColor;
+  border-top-color: transparent;
+
+  border-radius: 50%;
+
+  animation: recipe-book-spin 0.8s linear infinite;
+}
+
+@keyframes recipe-book-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ============================== Crop Editor ============================== */
 
 .recipe-crop-editor {
@@ -3548,43 +3650,9 @@ section > h1 {
 
 /* ============================== Crop Image Container ============================== */
 
-.recipe-crop-image-container {
-  position: relative;
-  display: block;
-  width: 100%;
-  max-width: 900px;
-  max-height: 70vh;
-  margin: 0 auto;
-  cursor: crosshair;
-  touch-action: none;
-  user-select: none;
-  overflow: hidden;
-}
-
 /* ============================== Crop Image ============================== */
 
-.recipe-crop-image {
-  display: block;
-  width: 100%;
-  max-width: 900px;
-  max-height: 70vh;
-  height: auto;
-  object-fit: contain;
-  margin: 0 auto;
-  user-select: none;
-  -webkit-user-drag: none;
-  pointer-events: none;
-}
-
 /* ============================== Crop Selection ============================== */
-
-.recipe-crop-selection {
-  position: absolute;
-  border: 3px solid white;
-  background: rgba(255, 255, 255, 0.2);
-  box-sizing: border-box;
-  pointer-events: none;
-}
 
 /* ============================== Crop Buttons ============================== */
 

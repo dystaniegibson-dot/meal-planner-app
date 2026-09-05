@@ -525,13 +525,6 @@ export default function RecipeScanner({ onSaveRecipe }) {
       return;
     }
 
-    // The recipe photo must be cropped,
-    // but the crop is NOT used for OCR.
-    if (!isRecipeImageCropped) {
-      setErrorMessage("❌ Scanner Error: Please crop the recipe image first.");
-      return;
-    }
-
     setScanning(true);
     setErrorMessage("");
     setRecipe(null);
@@ -684,7 +677,7 @@ export default function RecipeScanner({ onSaveRecipe }) {
   // ============================== Send Recipe to New Recipe ==============================
 
   const handleSendRecipeToNewRecipe = () => {
-    if (!recipe || !onSaveRecipe || !recipeImagePreview) {
+    if (!recipe || !onSaveRecipe) {
       return;
     }
 
@@ -694,7 +687,7 @@ export default function RecipeScanner({ onSaveRecipe }) {
     //
     // The OCR recipe was created from the ORIGINAL
     // full-size imageFiles.
-    onSaveRecipe(recipe, recipeImagePreview);
+    onSaveRecipe(recipe, recipeImagePreview || "");
   };
 
   // ============================== Page ==============================
@@ -880,9 +873,9 @@ export default function RecipeScanner({ onSaveRecipe }) {
           <div className="scanner-next-step">
             {!isRecipeImageCropped && (
               <p className="scanner-step-message">
-                ✂️ <strong>Next:</strong> Crop the Recipe Image above.
+                ✂️ Cropping the Recipe Image is optional.
                 <br />
-                Additional OCR images do not need to be cropped.
+                You can crop it if you want to use it as the recipe photo.
               </p>
             )}
 
@@ -894,7 +887,7 @@ export default function RecipeScanner({ onSaveRecipe }) {
               </p>
             )}
 
-            <button type="button" onClick={handleScanRecipe} disabled={scanning || !isRecipeImageCropped} className="scanner-scan-button">
+            <button type="button" onClick={handleScanRecipe} disabled={scanning} className="scanner-scan-button">
               {scanning ? "🔍 Scanning Recipe..." : `🔍 Scan ${imageFiles.length} ${imageFiles.length === 1 ? "Page" : "Pages"}`}
             </button>
           </div>

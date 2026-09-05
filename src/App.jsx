@@ -6,6 +6,7 @@ import Home from "./Home";
 import Discover from "./Discover";
 import NewRecipe from "./NewRecipe";
 import RecipeBook from "./RecipeBook";
+import Favorites from "./Favorites";
 import Planner from "./Planner";
 import GroceryList from "./GroceryList";
 import SignIn from "./SignIn";
@@ -14,28 +15,86 @@ import RecipeScanner from "./RecipeScanner";
 import Footer from "./Footer";
 // ============================== App Component ==============================
 export default function App() {
-  useEffect(() => {
-    // Ask Supabase who is currently signed in when the app first loads.
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
+  // ============================== Restore Login Session ==============================
+  //
+  // When the app is refreshed, Supabase needs a moment to restore the
+  // existing login session.
+  //
+  // We wait for that process to finish before treating the user as logged out.
+  // A temporary "no user yet" state during startup does NOT mean the user
+  // actually logged out.
 
+  // ============================== Restore Login Session ==============================
+  //
+  // When the app refreshes, Supabase needs a moment to restore the
+  // existing login session.
+  //
+  // IMPORTANT:
+  // We do NOT allow the recipe loader to run until this process
+  // has finished. This prevents a temporary user === null state
+  // from wiping the recipe list during startup.
+
+  useEffect(() => {
+    let mounted = true;
+
+    const restoreSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!mounted) return;
+
+        // Restore the existing signed-in user.
+        setUser(session?.user ?? null);
+
+        // Supabase has finished checking the saved login session.
+        setAuthLoading(false);
+      } catch (error) {
+        console.error("Error restoring Supabase session:", error);
+
+        if (!mounted) return;
+
+        setUser(null);
+        setAuthLoading(false);
+      }
+    };
+
+    restoreSession();
+
+    // Keep the user state synchronized after startup.
     const {
       data: { subscription },
-      // Listen for future sign-in/sign-out changes and update React's user state.
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+
+      // Update the user whenever the authentication session changes.
       setUser(session?.user ?? null);
+
+      // DO NOT change authLoading here.
+      //
+      // getSession() above is responsible for telling the app
+      // that the initial login restoration is finished.
     });
 
-    // Stop listening when App unmounts so we do not leave an unused auth listener behind.
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
   // Store references to recipe ingredient inputs so other code can access those DOM elements.
   const inputRefs = useRef([]);
+  // Prevent duplicate startup recipe loads from turning
+  // the loading message back on after recipes are already loaded.
+  const recipeLoadStarted = useRef(false);
 
   // ============================== State ==============================
   // ===== STATE ===== //
   const [user, setUser] = useState(null);
+  // Tracks whether Supabase has finished restoring the user's login session.
+  // This prevents the app from treating a temporary "no user yet" state
+  // as if the person is actually logged out.
+  const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -55,7 +114,11 @@ export default function App() {
   // API key used when requesting recipes from Spoonacular.
   const SPOON_KEY = "83d56aebeba044838de5cc0e187d0850";
   const [fullRecipePaste, setFullRecipePaste] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All");
+  // ============================== Recipe Organization ==============================
+  // Controls the meal-time filter in the Recipe Book.
+  const [mealTimeFilter, setMealTimeFilter] = useState("All");
+  // Controls the food-type filter in the Recipe Book.
+  const [foodTypeFilter, setFoodTypeFilter] = useState("All");
   const [addedRecipes, setAddedRecipes] = useState({});
   // Store the recipe currently being displayed in the recipe popup.
   const [activeRecipe, setActiveRecipe] = useState(null);
@@ -190,6 +253,11 @@ export default function App() {
   // loads recipes from supabase sql
   const [recipes, setRecipes] = useState([]);
 
+  // Tracks whether the user's recipes are still loading.
+  // This lets the Recipe Book show a loading message instead
+  // of looking empty during the refresh.
+  const [recipesLoading, setRecipesLoading] = useState(true);
+
   // ============================== Supabase Recipes ==============================
   // Convert a Supabase recipe row into the format used by the app.
   const formatSavedRecipe = (recipe) => ({
@@ -223,38 +291,218 @@ export default function App() {
     image: recipe.image || "",
   });
 
+  // ============================== Load Recipe Images ==============================
+  //
+  // Images are loaded separately from the main recipe data.
+  // This prevents large image data from slowing down or timing out
+  // the initial recipe refresh.
+  //
+  // A broken blob: URL is ignored because blob URLs are temporary
+  // and cannot reliably survive a page refresh.
+
+  const loadRecipeImages = async (recipeList) => {
+    for (const recipe of recipeList) {
+      try {
+        // Skip recipes that do not have an image value.
+        if (!recipe?.image) continue;
+
+        // Blob URLs are temporary browser URLs.
+        // They are not useful after a refresh, so ignore them.
+        if (recipe.image.startsWith("blob:")) continue;
+
+        // Add the image to the browser cache.
+        // The recipe itself is already displayed, so this happens
+        // separately after the main recipe list has loaded.
+        const image = new Image();
+
+        image.onload = () => {
+          setRecipes((currentRecipes) =>
+            currentRecipes.map((currentRecipe) => (currentRecipe.id === recipe.id ? { ...currentRecipe, image: recipe.image } : currentRecipe)),
+          );
+        };
+
+        image.onerror = () => {
+          console.warn(`Could not load image for recipe: ${recipe.name}`);
+        };
+
+        image.src = recipe.image;
+      } catch (error) {
+        console.warn(`Could not load image for recipe: ${recipe.name}`, error);
+      }
+    }
+  };
   // Load only the recipes belonging to the currently signed-in user.
   const loadUserRecipes = async (currentUser) => {
+    // Start showing the Recipe Book loading message.
+    setRecipesLoading(true);
+
     if (!currentUser) {
+      setRecipes([]);
+      setRecipesLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("recipes")
+      .select("id, created_at, user_id, name, ingredients, instructions, category, favorite, image")
+      .eq("user_id", currentUser.id);
+
+    if (error) {
+      console.error("Error loading recipes:", error);
+      setRecipesLoading(false);
+      return;
+    }
+
+    const formattedRecipes = (data || []).map(formatSavedRecipe);
+
+    // Load the recipes immediately.
+    // We are NOT waiting for the images before displaying the recipes.
+    setRecipes(formattedRecipes);
+
+    // Load saved images separately.
+    loadRecipeImages(formattedRecipes);
+
+    // The recipe data itself has loaded.
+    // The images can continue loading in the background.
+    setRecipesLoading(false);
+  };
+
+  // ============================== Load User Recipes ==============================
+  //
+  // IMPORTANT:
+  // Do not attempt to load recipes while Supabase is still restoring
+  // the login session.
+  //
+  // This prevents the temporary user === null startup state from
+  // clearing the recipe list.
+
+  // ============================== Load User Recipes ==============================
+  //
+  // Wait for Supabase to finish restoring the login session.
+  // Once we know who the user is, immediately load that user's recipes.
+  //
+  // This prevents a page refresh from temporarily seeing user === null
+  // and clearing the recipe list before Supabase restores the session.
+
+  useEffect(() => {
+    // Supabase is still restoring the login session.
+    // Do nothing yet.
+    if (authLoading) return;
+
+    // Supabase finished checking the session and there is no logged-in user.
+    // This is a real signed-out state, so clear the recipes.
+    if (!user) {
       setRecipes([]);
       return;
     }
 
-    const { data, error } = await supabase.from("recipes").select("*").eq("user_id", currentUser.id);
-
-    if (error) {
-      console.error("Error loading recipes:", error);
-      return;
-    }
-
-    setRecipes((data || []).map(formatSavedRecipe));
-  };
-
-  // Reload the user's recipes whenever authentication changes.
-  useEffect(() => {
+    // We have the logged-in user.
+    // Load their recipes immediately from Supabase.
     loadUserRecipes(user);
-  }, [user]);
+  }, [user, authLoading]);
 
   // Make a sorted copy of the recipes so the original array is not changed.
-  const filtered = [...recipes].sort((a, b) => {
-    // favorites first
-    if (a.favorite !== b.favorite) {
-      return a.favorite ? -1 : 1;
+  // ============================== Recipe Organization ==============================
+  //
+  // Figure out useful categories from the recipe itself.
+  //
+  // We look at:
+  // - recipe name
+  // - ingredients
+  // - existing category
+  //
+  // This means older recipes can still be organized even if
+  // they do not have perfect category information saved in Supabase.
+  //
+
+  const getRecipeCategoryText = (recipe) => {
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients.join(" ") : recipe.ingredients || "";
+
+    return `${recipe.name || ""} ${ingredients} ${recipe.category || ""}`.toLowerCase();
+  };
+
+  // ============================== Meal Time Detection ==============================
+
+  const getMealTime = (recipe) => {
+    const text = getRecipeCategoryText(recipe);
+
+    // Breakfast foods.
+    if (
+      /breakfast|pancake|waffle|french toast|omelet|omelette|scrambled egg|fried egg|egg sandwich|breakfast burrito|hash browns|cereal|oatmeal|muffin|bagel|toast/.test(
+        text,
+      )
+    ) {
+      return "Breakfast";
     }
 
-    // then alphabetical
-    return a.name.localeCompare(b.name);
-  });
+    // Desserts and sweets.
+    if (/dessert|cake|cookie|brownie|cupcake|pie|pudding|cheesecake|ice cream|candy|fudge|sweet treat|donut|doughnut|chocolate cake/.test(text)) {
+      return "Dessert";
+    }
+
+    // Snacks.
+    if (/snack|chips|dip|nachos|popcorn|trail mix|appetizer|appetiser|finger food/.test(text)) {
+      return "Snack";
+    }
+
+    // Lunch foods.
+    if (/sandwich|wrap|sub |submarine|panini|salad|soup|quesadilla|taco|burrito/.test(text)) {
+      return "Lunch";
+    }
+
+    // Most remaining savory recipes are dinner recipes.
+    return "Dinner";
+  };
+
+  // ============================== Food Type Detection ==============================
+
+  const getFoodType = (recipe) => {
+    const text = getRecipeCategoryText(recipe);
+
+    if (/chicken|chickpea/.test(text)) return "Chicken";
+    if (/beef|steak|ground beef|sirloin|roast beef/.test(text)) return "Beef";
+    if (/pork|ham|bacon|sausage/.test(text)) return "Pork";
+    if (/shrimp|prawn|salmon|tuna|fish|seafood|crab|lobster/.test(text)) return "Seafood";
+    if (/pasta|spaghetti|macaroni|linguine|fettuccine|lasagna|lasagne|penne|ravioli/.test(text)) return "Pasta";
+    if (/vegetarian|vegetable|vegan|tofu|lentil|bean/.test(text)) return "Vegetarian";
+    if (/cake|cookie|brownie|cupcake|pie|pudding|cheesecake|ice cream|chocolate|dessert/.test(text)) return "Dessert";
+
+    return "Other";
+  };
+
+  // ============================== Recipe Book List ==============================
+  //
+  // Search is still handled inside RecipeBook.jsx.
+  // Here we only determine the categories and preserve
+  // favorites-first ordering.
+  //
+
+  const filtered = [...recipes]
+    .map((recipe) => ({
+      ...recipe,
+      detectedMealTime: getMealTime(recipe),
+      detectedFoodType: getFoodType(recipe),
+    }))
+    .filter((recipe) => {
+      if (mealTimeFilter !== "All" && recipe.detectedMealTime !== mealTimeFilter) {
+        return false;
+      }
+
+      if (foodTypeFilter !== "All" && recipe.detectedFoodType !== foodTypeFilter) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Favorites remain first.
+      if (a.favorite !== b.favorite) {
+        return a.favorite ? -1 : 1;
+      }
+
+      // Keep a predictable order inside each category.
+      return a.name.localeCompare(b.name);
+    });
 
   const [apiRecipes, setApiRecipes] = useState([]);
   const [search, setSearch] = useState("");
@@ -436,7 +684,8 @@ export default function App() {
 
     if (!text) return;
 
-    const lower = text.toLowerCase();
+    const normalizedText = text;
+    const lower = normalizedText.toLowerCase();
 
     // detect sections
     const ingredientKeywords = ["ingredients", "what you need", "you will need", "supplies"];
@@ -477,8 +726,8 @@ export default function App() {
 
     // split sections
     if (ingredientIndex !== -1 && instructionIndex !== -1) {
-      ingredientsText = text.slice(ingredientIndex, instructionIndex);
-      instructionsText = text.slice(instructionIndex);
+      ingredientsText = normalizedText.slice(ingredientIndex, instructionIndex);
+      instructionsText = normalizedText.slice(instructionIndex);
     } else {
       // fallback: split in half
       const midpoint = Math.floor(text.length / 2);
@@ -488,9 +737,10 @@ export default function App() {
 
     // clean ingredients
     const ingredients = ingredientsText
-      .split("\n")
+      .replace(/ingredients:?/gi, "")
+      .split(/\n|(?<=\S)\s+(?=[0-9]+\s)/)
       .map((line) => line.trim())
-      .filter((line) => line && !line.toLowerCase().includes("ingredients"));
+      .filter((line) => line);
 
     const safeIngredients = ingredients.length > 0 ? ingredients : [""];
 
@@ -535,10 +785,19 @@ export default function App() {
 
   // ============================== Send Scanned Recipe to New Recipe ==============================
 
-  const handleScannerSaveRecipe = (recipe, recipeImage) => {
-    // Convert the scanned recipe into the same plain-text format
-    // that the existing Auto Fill Recipe parser expects.
+  // ============================== Send Scanned Recipe to New Recipe ==============================
+  //
+  // Take the recipe information AND the cropped recipe image from
+  // Recipe Scanner and place everything directly into New Recipe.
+  //
+  // This avoids sending the scanned recipe through the Auto Fill parser
+  // again, which could interfere with the image handoff.
 
+  const handleScannerSaveRecipe = (recipe, recipeImage) => {
+    if (!recipe) return;
+
+    // Build the text version so the original scanned recipe
+    // is still available in the "Paste full recipe here..." box.
     const recipeText = [
       recipe.recipeName || "",
 
@@ -551,25 +810,33 @@ export default function App() {
       .filter(Boolean)
       .join("\n\n");
 
-    // Put the scanned recipe into the existing
-    // "Paste full recipe here..." box.
-
-    setFullRecipePaste(recipeText);
-
-    // Put the first cropped recipe page directly into
-    // the Recipe Photo section on New Recipe.
-
+    // Put EVERYTHING into New Recipe at once.
+    //
+    // Most importantly:
+    // recipeImage is the cropped image coming directly
+    // from Recipe Scanner.
     setNewRecipe((prev) => ({
       ...prev,
+
+      name: recipe.recipeName || "",
+      ingredients: recipe.ingredients?.length ? recipe.ingredients : [""],
+      instructions: recipe.instructions?.length ? recipe.instructions : [],
       image: recipeImage || "",
+
+      // Keep these fields ready for the normal New Recipe form.
+      imageIngredients: [],
+      imageInstructions: [],
+      favorite: false,
+      category: "",
     }));
 
-    // Open the New Recipe page.
+    // Keep the scanned text available in the paste box too.
+    setFullRecipePaste(recipeText);
 
+    // Open New Recipe.
     setPage("new");
 
     // Start the New Recipe page at the top.
-
     window.scrollTo({
       top: 0,
       behavior: "smooth",
@@ -609,19 +876,57 @@ export default function App() {
   // ===== CATEGORY =====
   // Look at recipe text and choose a basic category from matching keywords.
   const detectCategory = (text) => {
-    text = text.toLowerCase();
+    const lowerText = text.toLowerCase();
 
-    if (text.includes("chicken")) return "chicken";
-    if (text.includes("beef")) return "beef";
-    if (text.includes("pork")) return "pork";
-    if (text.includes("sausage")) return "sausage";
-    if (text.includes("pasta")) return "pasta";
-    if (text.includes("sugar") || text.includes("chocolate")) return "dessert";
+    const categories = [];
 
-    return "other";
+    // Meat categories
+    if (lowerText.includes("chicken")) categories.push("chicken");
+    if (lowerText.includes("beef")) categories.push("beef");
+    if (lowerText.includes("pork")) categories.push("pork");
+    if (lowerText.includes("bacon")) categories.push("bacon");
+    if (lowerText.includes("sausage")) categories.push("sausage");
+    if (lowerText.includes("turkey")) categories.push("turkey");
+    if (lowerText.includes("seafood")) categories.push("seafood");
+    if (lowerText.includes("shrimp")) categories.push("seafood");
+    if (lowerText.includes("salmon")) categories.push("seafood");
+    if (lowerText.includes("fish")) categories.push("seafood");
+
+    // Other useful recipe categories
+    if (lowerText.includes("pasta")) categories.push("pasta");
+    if (lowerText.includes("casserole")) categories.push("casserole");
+    if (lowerText.includes("rice")) categories.push("rice");
+    if (lowerText.includes("potato")) categories.push("potato");
+    if (lowerText.includes("vegetarian")) categories.push("vegetarian");
+    if (lowerText.includes("chocolate") || lowerText.includes("sugar")) categories.push("dessert");
+
+    if (
+      lowerText.includes("dough") ||
+      lowerText.includes("bread") ||
+      lowerText.includes("roll") ||
+      lowerText.includes("biscuit") ||
+      lowerText.includes("croissant") ||
+      lowerText.includes("muffin") ||
+      lowerText.includes("bagel") ||
+      lowerText.includes("donut") ||
+      lowerText.includes("pastry")
+    ) {
+      categories.push("bakery");
+    }
+
+    // If nothing matched, keep the recipe searchable as "other".
+    if (categories.length === 0) {
+      categories.push("other");
+    }
+
+    // Remove duplicates before saving.
+    return [...new Set(categories)].join(", ");
   };
 
   // ============================== Clear Recipe Form ==============================
+  // ============================== Clear Recipe Form ==============================
+  // Resets the New Recipe form back to a completely blank recipe.
+  // This is used when the user leaves the New Recipe page.
   const clearRecipeForm = () => {
     setNewRecipe({
       name: "",
@@ -637,11 +942,20 @@ export default function App() {
     setIngredientPaste("");
     setInstructionPaste("");
     setFullRecipePaste("");
-    // Also clear the separately selected image.
-    setSelectedImage(null);
-    // Make sure the cropper is closed.
-    setIsCroppingImage(false);
+
+    // Leaving New Recipe also means we are no longer editing a recipe.
+    setEditIndex(null);
   };
+
+  // ============================== Clear New Recipe When Leaving Page ==============================
+  // If the user leaves the New Recipe page without saving,
+  // clear anything they typed so it will be blank the next
+  // time they open New Recipe.
+  useEffect(() => {
+    if (page !== "new") {
+      clearRecipeForm();
+    }
+  }, [page]);
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -657,12 +971,16 @@ export default function App() {
       return;
     }
 
+    const recipeText = [newRecipe.name, ...(newRecipe.ingredients || [])].join(" ");
+
+    const detectedCategories = detectCategory(recipeText);
+
     const recipeToSave = {
       user_id: user.id,
       name: newRecipe.name,
       ingredients: JSON.stringify(newRecipe.ingredients || []),
       instructions: JSON.stringify(newRecipe.instructions || []),
-      category: newRecipe.category || "",
+      category: detectedCategories,
       favorite: newRecipe.favorite || false,
       image: newRecipe.image || "",
     };
@@ -759,12 +1077,16 @@ export default function App() {
   const updateRecipeInSupabase = async (recipe) => {
     if (!user || !recipe?.id) return false;
 
+    const recipeText = [recipe.name, ...(recipe.ingredients || [])].join(" ");
+
+    const detectedCategories = detectCategory(recipeText);
+
     const recipeToSave = {
       user_id: user.id,
       name: recipe.name,
       ingredients: JSON.stringify(recipe.ingredients || []),
       instructions: JSON.stringify(recipe.instructions || []),
-      category: recipe.category || "",
+      category: detectedCategories,
       favorite: recipe.favorite || false,
       image: recipe.image || "",
     };
@@ -1052,6 +1374,18 @@ export default function App() {
 
           <button
             className="sidebar-button"
+            onClick={() => setPage("favorites")}
+            style={{
+              background: page === "favorites" ? "var(--theme-accent)" : "#ffffff",
+              padding: page === "favorites" ? "14px 18px" : "12px 16px",
+            }}
+          >
+            <span className="sidebar-icon">⭐</span>
+            <span className="sidebar-label">Favorites</span>
+          </button>
+
+          <button
+            className="sidebar-button"
             onClick={() => setPage("planner")}
             style={{
               background: page === "planner" ? "var(--theme-accent)" : "#ffffff",
@@ -1139,8 +1473,17 @@ export default function App() {
               recipes={recipes}
               setRecipes={setRecipes}
               setActiveRecipe={setActiveRecipe}
+              recipesLoading={recipesLoading}
+              mealTimeFilter={mealTimeFilter}
+              setMealTimeFilter={setMealTimeFilter}
+              foodTypeFilter={foodTypeFilter}
+              setFoodTypeFilter={setFoodTypeFilter}
             />
           )}
+
+          {/* ============================== Favorites ============================== */}
+          {/* FAVORITES */}
+          {page === "favorites" && <Favorites recipes={recipes} setActiveRecipe={setActiveRecipe} recipesLoading={recipesLoading} />}
 
           {/* ============================== Planner ============================== */}
           {/* PLANNER */}
@@ -1281,6 +1624,20 @@ export default function App() {
               >
                 ✏️ Edit
               </button>
+
+              {/* ============================== Favorite ============================== */}
+              {/* 
+                  This button works for saved recipes from Recipe Book
+                  and saved recipes opened from Discover.
+
+                  The existing toggleFavorite function already saves the
+                  favorite value to Supabase and updates React state.
+              */}
+              {activeRecipe?.id && (
+                <button className="recipe-action recipe-action-favorite" onClick={() => toggleFavorite(activeRecipe)}>
+                  {activeRecipe.favorite ? "💛 Remove from Favorites" : "⭐ Add to Favorites"}
+                </button>
+              )}
 
               <h2 className="recipe-modal-title">{activeRecipe.name}</h2>
 
